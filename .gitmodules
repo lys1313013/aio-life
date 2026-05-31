@@ -1,0 +1,6 @@
+[submodule "aio-life-front"]
+	path = aio-life-front
+	url = https://github.com/lys1313013/aio-life-front.git
+[submodule "aio-life-serve"]
+	path = aio-life-serve
+	url = https://github.com/lys1313013/aio-life-serve.git
