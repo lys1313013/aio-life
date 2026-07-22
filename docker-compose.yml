@@ -1,0 +1,39 @@
+services:
+  backend:
+    image: crpi-yvha9coypdedaafa.cn-beijing.personal.cr.aliyuncs.com/lys1313013/aio-life-serve:latest
+    container_name: aio-life-serve
+    restart: unless-stopped
+    ports:
+      - "45678:45678"
+      - "45679:45679"
+    environment:
+      AIO_LIFE_DB_URL: ${AIO_LIFE_DB_URL:-127.0.0.1:3306}
+      AIO_LIFE_DB_PASSWORD: ${AIO_LIFE_DB_PASSWORD:-root}
+      AIO_LIFE_REDIS_HOST: ${AIO_LIFE_REDIS_HOST:-127.0.0.1}
+      AIO_LIFE_REDIS_PORT: ${AIO_LIFE_REDIS_PORT:-6379}
+      AIO_LIFE_REDIS_PASSWORD: ${AIO_LIFE_REDIS_PASSWORD:-}
+      AIO_LIFE_MINIO_ENDPOINT: ${AIO_LIFE_MINIO_ENDPOINT:-http://localhost:1300}
+      AIO_LIFE_MINIO_ACCESS_KEY: ${AIO_LIFE_MINIO_ACCESS_KEY:-aio_life}
+      AIO_LIFE_MINIO_SECRET_KEY: ${AIO_LIFE_MINIO_SECRET_KEY:-aio_life}
+      AIO_LIFE_MINIO_BUCKET_NAME: ${AIO_LIFE_MINIO_BUCKET_NAME:-aiolife}
+      AIO_LIFE_NEO4J_ENABLED: ${AIO_LIFE_NEO4J_ENABLED:-false}
+      AIO_LIFE_NEO4J_URI: ${AIO_LIFE_NEO4J_URI:-bolt://localhost:7687}
+      AIO_LIFE_MAIL_USERNAME: ${AIO_LIFE_MAIL_USERNAME:-test@qq.com}
+      AIO_LIFE_MAIL_PASSWORD: ${AIO_LIFE_MAIL_PASSWORD:-password}
+    networks:
+      - aio-life
+
+  frontend:
+    image: crpi-yvha9coypdedaafa.cn-beijing.personal.cr.aliyuncs.com/lys1313013/aio-life-front:latest
+    container_name: aio-life-front
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:8080"
+    networks:
+      - aio-life
+
+networks:
+  aio-life:
+    name: aio-life
