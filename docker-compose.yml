@@ -1,6 +1,6 @@
 services:
   backend:
-    image: crpi-yvha9coypdedaafa.cn-beijing.personal.cr.aliyuncs.com/lys1313013/aio-life-serve:latest
+    image: crpi-yvha9coypdedaafa.cn-beijing.personal.cr.aliyuncs.com/lys1313013/aio-life-server:latest
     container_name: aio-life-serve
     restart: unless-stopped
     ports:
@@ -20,6 +20,7 @@ services:
       AIO_LIFE_NEO4J_URI: ${AIO_LIFE_NEO4J_URI:-bolt://localhost:7687}
       AIO_LIFE_MAIL_USERNAME: ${AIO_LIFE_MAIL_USERNAME:-test@qq.com}
       AIO_LIFE_MAIL_PASSWORD: ${AIO_LIFE_MAIL_PASSWORD:-password}
+      AIO_LIFE_NOTIFICATION_ENCRYPTION_KEY: ${AIO_LIFE_NOTIFICATION_ENCRYPTION_KEY:-}
     networks:
       - aio-life
 
