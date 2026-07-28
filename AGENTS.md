@@ -11,7 +11,7 @@ AIO Life — All-in-One 人生管理系统，记录、统计、分析个人生�
 ```
 aio-life/
 ├── aio-life-front/    # 前端（git submodule → aio-life-front 仓库）
-├── aio-life-serve/    # 后端（git submodule → aio-life-serve 仓库）
+├── aio-life-server/    # 后端（git submodule → aio-life-server 仓库）
 └── docs/              # 需求/技术方案文档
 ```
 
@@ -50,12 +50,12 @@ pnpm run check          # 全量检查（循环依赖 + 依赖 + 类型 + 拼写
 - 编辑弹窗上下居中，可无 title；确认弹窗在按钮旁弹出
 - 别名 `#` 指向 `apps/web-antd/src/`
 
-## 后端 — aio-life-serve
+## 后端 — aio-life-server
 
 Spring Boot 3.3 + Java 21 + MyBatis Plus + MySQL 8.x + Redis + Sa-Token + MinIO。
 
 ```bash
-cd aio-life-serve
+cd aio-life-server
 mvn spring-boot:run              # 启动（端口 45678，context-path /api）
 mvn test                         # 运行测试
 mvn package -DskipTests          # 打包
