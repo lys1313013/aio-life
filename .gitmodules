@@ -1,6 +1,8 @@
 [submodule "aio-life-front"]
 	path = aio-life-front
 	url = https://github.com/lys1313013/aio-life-front.git
+	branch = main
 [submodule "aio-life-server"]
 	path = aio-life-server
 	url = https://github.com/lys1313013/aio-life-server.git
+	branch = main
