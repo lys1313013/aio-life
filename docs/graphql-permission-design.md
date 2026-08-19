@@ -315,7 +315,7 @@ public class WardrobeQueryResolver {
 | **最大查询深度** | 10 | `MaxQueryDepthInstrumentation` |
 | **最大查询复杂度** | 200 | `MaxQueryComplexityInstrumentation` |
 | **最大别名数** | 15 | 自定义 Instrumentation |
-| **introspection** | prod 关闭或仅管理员可用 | `spring.graphql.schema.introspection.enabled=false` + 按需开关 |
+| **introspection** | prod 关闭或仅管理员可用 | Spring Boot 无现成配置项，需在 `GraphQlSourceBuilderCustomizer` 中为 graphql-java 设置 `NoIntrospectionGraphqlFieldVisibility`（可按 profile/角色开关） |
 | **单请求 body 大小** | 256KB | Tomcat / Spring 配置 |
 | **persisted query**（二期） | 仅允许白名单 hash | Apollo APQ 兼容 |
 
@@ -325,10 +325,10 @@ public class GraphQlSecurityConfig {
     @Bean
     GraphQlSourceBuilderCustomizer hardening() {
         return builder -> builder.configureRuntimeWiring(w -> { /* ... */ })
-                .instrumentation(List.of(
+                .configureGraphQl(g -> g.instrumentation(new ChainedInstrumentation(List.of(
                         new MaxQueryDepthInstrumentation(10),
                         new MaxQueryComplexityInstrumentation(200)
-                ));
+                ))));
     }
 }
 ```

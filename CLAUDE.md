@@ -11,8 +11,8 @@ AIO Life — All-in-One 人生管理系统，记录、统计、分析个人生�
 ```
 aio-life/
 ├── aio-life-front/    # 前端（git submodule → aio-life-front 仓库）
-├── aio-life-serve/    # 后端（git submodule → aio-life-serve 仓库）
-└── docs/              # 需求/技术方案文档
+├── aio-life-server/   # 后端（git submodule → aio-life-server 仓库）
+└── docs/              # 需求/技术方案文档（数据库表结构见 `aio-life-server/docs/数据库表结构.md`）
 ```
 
 ## 子模块操作
@@ -50,12 +50,12 @@ pnpm run check          # 全量检查（循环依赖 + 依赖 + 类型 + 拼写
 - 编辑弹窗上下居中，可无 title；确认弹窗在按钮旁弹出
 - 别名 `#` 指向 `apps/web-antd/src/`
 
-## 后端 — aio-life-serve
+## 后端 — aio-life-server
 
 Spring Boot 3.3 + Java 21 + MyBatis Plus + MySQL 8.x + Redis + Sa-Token + MinIO。
 
 ```bash
-cd aio-life-serve
+cd aio-life-server
 mvn spring-boot:run              # 启动（端口 45678，context-path /api）
 mvn test                         # 运行测试
 mvn package -DskipTests          # 打包
@@ -73,6 +73,8 @@ mvn package -DskipTests          # 打包
 | `system` | 系统管理（用户、菜单、字典） |
 | `record` | 核心记录引擎：时迹、目标、待办、理财、荣誉、备忘、消息通知、第三方同步（LeetCode/CSDN/GitHub） |
 | `wardrobe` | 衣柜管理 |
+| `membership` | 会员维护：会员记录、统计 |
+| `feedback` | 用户反馈：反馈提交、评论、管理端处理 |
 | `relationship` | 人际关系图谱（Neo4j），可通过 `AIO_LIFE_NEO4J_ENABLED` 开关 |
 | `llm` | LLM/AI 功能（LangChain4j + OpenAI），API Key 管理 |
 | `mcp` | MCP 协议支持（自定义注解驱动的 Tool 注册），含认证层 |
@@ -82,5 +84,5 @@ mvn package -DskipTests          # 打包
 - 逻辑删除：MyBatis Plus 全局配置 `is_deleted` 字段
 - 对象映射：MapStruct，Lombok 配合 `lombok-mapstruct-binding`
 - 环境变量：数据库密码、Redis、MinIO、邮件等敏感配置通过 `AIO_LIFE_*` 环境变量注入
-- 邮件验证码有频率限制（单IP/单邮箱/全局，配置在 `aio.life.serve.auth.code.*`）
+- 邮件验证码有频率限制（单IP/单邮箱/全局，配置在 `aio.life.server.auth.code.*`）
 - 定时任务：`@EnableScheduling`，LeetCode 同步 cron 可配
