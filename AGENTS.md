@@ -4,25 +4,25 @@ This file provides guidance to Codex when working with code in this repository.
 
 ## 项目概述
 
-AIO Life — All-in-One 人生管理系统，记录、统计、分析个人生活数据。Monorepo 包含前后端两个 git 子模块。
+AIO Life — All-in-One 人生管理系统，记录、统计、分析个人生活数据。本仓库保存项目文档、编排配置和开发入口，前后端由两个独立 Git 仓库维护。
 
 ## 目录结构
 
 ```
 aio-life/
-├── aio-life-front/    # 前端（git submodule → aio-life-front 仓库）
-├── aio-life-server/   # 后端（git submodule → aio-life-server 仓库）
+├── aio-life-front/    # 独立前端仓库（主仓库不跟踪）
+├── aio-life-server/   # 独立后端仓库（主仓库不跟踪）
 └── docs/              # 需求/技术方案文档（数据库表结构见 `aio-life-server/docs/数据库表结构.md`）
 ```
 
-## 子模块操作
+## 前后端仓库操作
 
 ```bash
-git clone --recursive https://github.com/lys1313013/aio-life.git  # 克隆含子模块
-git submodule update --remote   # 更新子模块到最新
+./scripts/setup-repositories.sh   # 缺失时克隆前后端仓库
+./scripts/pull-latest-main.sh     # 一键快进拉取前后端最新 main
 ```
 
-提交子模块变更就是普通的 `git add . && git commit && git push`。
+前后端目录各自拥有独立的 Git 历史。代码修改必须在对应仓库内提交和推送；主仓库不记录前后端 commit 指针。
 
 ## 前端 — aio-life-front
 
