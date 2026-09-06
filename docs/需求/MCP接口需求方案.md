@@ -24,23 +24,23 @@ AIO Life 通过 **MCP（Model Context Protocol）** 向 AI 客户端暴露内部
 
 ### 状态语义规范
 
-**给 AI 的「多值」状态字段一律用中文语义标签，不暴露 0/1/2/3 等裸枚举数字**（大模型无法理解无上下文的数字，容易乱猜）。由后端负责「中文标签 ↔ 存储枚举」的转换：
+**给 AI 的「多值」状态筛选使用英文语义 code，响应使用中文业务标签，不暴露 0/1/2/3 等裸枚举数字**。阅读、观影、目标共用 `ProgressStatusEnum`：
 
 | 业务字段 | 中文标签 | 说明 |
 |---|---|---|
-| 阅读状态 `status` | `未开始` / `进行中` / `已完成` / `搁置` | 对应存储 0/1/2/3 |
-| 观影状态 `status` | `想看` / `在看` / `看过` / `搁置` | 对应存储 0/1/2/3 |
+| 阅读状态 `status` | `想看` / `在看` / `看过` / `搁置` | `not_started/in_progress/completed/on_hold` |
+| 观影状态 `status` | `想看` / `在看` / `看过` / `搁置` | `not_started/in_progress/completed/on_hold` |
 | 任务明细 `priority` | `高` / `中` / `低` | 对应存储 1/10/20，默认 `中` |
 | 时迹 `relateType` | `阅读` / `观影` | 对应存储 1/2 |
 | 分类 `timeType` | `必须` / `积极` / `休闲` | 对应存储 1/2/3 |
 | 目标 `type` | `日目标` / `周目标` / `月度目标` / `季度目标` / `半年目标` / `年度目标` / `三年目标` / `五年目标` / `十年目标` / `人生目标` | 对应存储 1~10，见 `GoalTypeEnum`（注意：`GoalEntity` 上的旧注释 1=年度/2=月度/3=日 已过时，以枚举为准） |
-| 目标 `status` | `待开始` / `进行中` / `已完成` / `已放弃` | 对应存储 0/1/2/3，见 `GoalStatusEnum` |
+| 目标 `status` | `待开始` / `进行中` / `已完成` / `搁置` | `not_started/in_progress/completed/on_hold`，见 `ProgressStatusEnum` |
 | 纪念日 `type` | `纪念日` / `倒数日` | 对应存储 `anniversary` / `countdown` |
 | B站学习视频 `status` | `未开始` / `进行中` / `已暂停` / `部分完成` / `已完成` | 对应存储 1~5，见 `StudyEnum` |
 
 > 例外：二值 0/1 布尔字段（`isCompleted`、`isPinned`、`isStarred` 等）语义自明，无需转换，保持数字并带字段说明即可。
 >
-> 另外，查询工具的 `status` **筛选参数**（如 `read_record_query` / `movie_query`）直接传数字枚举（0/1/2/3），参数说明已自带映射；响应字段仍返回中文标签。
+> 查询工具的 `status` 筛选参数传语义 code；响应字段返回对应场景的中文标签。
 
 ---
 
@@ -173,7 +173,7 @@ AIO Life 通过 **MCP（Model Context Protocol）** 向 AI 客户端暴露内部
 | 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|
 | title | string | 否 | 书名模糊搜索 |
-| status | int | 否 | 状态筛选：0未开始，1进行中，2已完成，3搁置 |
+| status | string | 否 | 状态筛选：`not_started/in_progress/completed/on_hold` |
 | page | int | 否 | 页码，默认 1 |
 | size | int | 否 | 每页条数，默认 10，最大 100 |
 
@@ -192,7 +192,7 @@ AIO Life 通过 **MCP（Model Context Protocol）** 向 AI 客户端暴露内部
 | title | string | 书名 |
 | author | string | 作者 |
 | type | int | 类型 |
-| status | string | 状态（中文）：未开始 / 进行中 / 已完成 / 搁置 |
+| status | string | 状态（中文）：想看 / 在看 / 看过 / 搁置 |
 | totalProgress | int | 总进度 |
 | currentProgress | int | 当前进度 |
 | startTime | datetime | 开始时间 |
@@ -209,7 +209,7 @@ AIO Life 通过 **MCP（Model Context Protocol）** 向 AI 客户端暴露内部
 |---|---|---|---|
 | title | string | 否 | 片名模糊搜索 |
 | director | string | 否 | 导演搜索 |
-| status | int | 否 | 状态筛选：0想看，1在看，2看过，3搁置 |
+| status | string | 否 | 状态筛选：`not_started/in_progress/completed/on_hold` |
 | page | int | 否 | 页码，默认 1 |
 | size | int | 否 | 每页条数，默认 10，最大 100 |
 
@@ -294,7 +294,7 @@ AIO Life 通过 **MCP（Model Context Protocol）** 向 AI 客户端暴露内部
 | 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|
 | type | int | 否 | 目标类型筛选：1日目标，2周目标，3月度目标，4季度目标，5半年目标，6年度目标，7三年目标，8五年目标，9十年目标，10人生目标（见 `GoalTypeEnum`） |
-| status | int | 否 | 状态筛选：0待开始，1进行中，2已完成，3已放弃 |
+| status | string | 否 | 状态筛选：`not_started/in_progress/completed/on_hold` |
 | keyword | string | 否 | 关键词，模糊匹配标题/描述/标签 |
 | year | int | 否 | 年份筛选（用于年度/月度目标） |
 | month | int | 否 | 月份筛选（用于月度目标，需配合 year） |
@@ -316,7 +316,7 @@ AIO Life 通过 **MCP（Model Context Protocol）** 向 AI 客户端暴露内部
 | type | string | 目标类型（中文）：日目标 / 周目标 / 月度目标 / 季度目标 / 半年目标 / 年度目标 / 三年目标 / 五年目标 / 十年目标 / 人生目标 |
 | title | string | 目标标题 |
 | description | string | 目标描述 |
-| status | string | 状态（中文）：待开始 / 进行中 / 已完成 / 已放弃 |
+| status | string | 状态（中文）：待开始 / 进行中 / 已完成 / 搁置 |
 | targetValue | int | 目标值（可为空，表示无量化目标） |
 | currentValue | int | 当前值 |
 | year / month / day | int | 所属年/月/日（按 type 生效） |
@@ -330,7 +330,7 @@ AIO Life 通过 **MCP（Model Context Protocol）** 向 AI 客户端暴露内部
 
 #### goal_progress_update — 更新目标进展
 
-**用途**：更新某目标的当前进度值和/或状态（如标记完成、放弃），校验目标归属当前用户。AI 对话中自然就能帮用户推进目标。
+**用途**：更新某目标的当前进度值和/或状态（如标记完成、搁置），校验目标归属当前用户。AI 对话中自然就能帮用户推进目标。
 
 **请求参数**（`GoalProgressUpdateMcpReq`）
 
@@ -338,13 +338,13 @@ AIO Life 通过 **MCP（Model Context Protocol）** 向 AI 客户端暴露内部
 |---|---|---|---|
 | goalId | long | 是 | 目标 ID（应优先通过 `goal_query` 获取，须属于当前用户） |
 | currentValue | int | 否 | 更新当前值；与 status 至少传一个 |
-| status | string | 否 | 状态（中文）：进行中 / 已完成 / 已放弃 |
+| status | string | 否 | 状态（中文）：进行中 / 已完成 / 搁置 |
 
 **业务规则**：
 - 仅允许修改上述两字段，标题、目标值等不在本工具职责内（避免 AI 误改目标定义）
 - `status` 传 `已完成` 时：后端自动写入 `completedAt`；若目标有 `targetValue` 且 `currentValue` 未传，自动置为 `targetValue`
 - `status` 传 `进行中` 时：清空 `completedAt`
-- 仅允许当前状态为「待开始 / 进行中」的目标流转，「已完成 / 已放弃」需先恢复为进行中（二期再考虑）
+- 仅允许当前状态为「待开始 / 进行中」的目标流转，「已完成 / 搁置」需先恢复为进行中
 
 **响应**：文案字符串，如 `目标「读完 12 本书」进度已更新：7/12`，状态变更时附带 `状态已变更为：已完成`
 
