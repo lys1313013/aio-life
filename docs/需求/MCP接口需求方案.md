@@ -24,7 +24,7 @@ AIO Life 通过 **MCP（Model Context Protocol）** 向 AI 客户端暴露内部
 
 ### 状态语义规范
 
-**给 AI 的「多值」状态筛选使用英文语义 code，响应使用中文业务标签，不暴露 0/1/2/3 等裸枚举数字**。阅读、观影、目标共用 `ProgressStatusEnum`：
+**给 AI 的「多值」状态筛选使用英文语义 code，响应使用中文业务标签，不暴露 0/1/2/3 等裸枚举数字**。阅读、观影、目标和B站学习视频共用 `ProgressStatusEnum`：
 
 | 业务字段 | 中文标签 | 说明 |
 |---|---|---|
@@ -36,7 +36,7 @@ AIO Life 通过 **MCP（Model Context Protocol）** 向 AI 客户端暴露内部
 | 目标 `type` | `日目标` / `周目标` / `月度目标` / `季度目标` / `半年目标` / `年度目标` / `三年目标` / `五年目标` / `十年目标` / `人生目标` | 对应存储 1~10，见 `GoalTypeEnum`（注意：`GoalEntity` 上的旧注释 1=年度/2=月度/3=日 已过时，以枚举为准） |
 | 目标 `status` | `待开始` / `进行中` / `已完成` / `搁置` | `not_started/in_progress/completed/on_hold`，见 `ProgressStatusEnum` |
 | 纪念日 `type` | `纪念日` / `倒数日` | 对应存储 `anniversary` / `countdown` |
-| B站学习视频 `status` | `未开始` / `进行中` / `已暂停` / `部分完成` / `已完成` | 对应存储 1~5，见 `StudyEnum` |
+| B站学习视频 `status` | `未开始` / `进行中` / `已暂停` / `已完成` | `not_started/in_progress/on_hold/completed`，复用 `ProgressStatusEnum`；`on_hold` 在本模块展示为“已暂停” |
 
 > 例外：二值 0/1 布尔字段（`isCompleted`、`isPinned`、`isStarred` 等）语义自明，无需转换，保持数字并带字段说明即可。
 >
@@ -389,7 +389,7 @@ AIO Life 通过 **MCP（Model Context Protocol）** 向 AI 客户端暴露内部
 | 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|
 | title | string | 否 | 标题模糊搜索 |
-| status | int | 否 | 状态筛选：1未开始，2进行中，3已暂停，4部分完成，5已完成（见 `StudyEnum`） |
+| status | string | 否 | 状态筛选：`not_started/in_progress/on_hold/completed`（见 `ProgressStatusEnum`） |
 | page | int | 否 | 页码，默认 1 |
 | size | int | 否 | 每页条数，默认 10，最大 100 |
 
@@ -408,7 +408,7 @@ AIO Life 通过 **MCP（Model Context Protocol）** 向 AI 客户端暴露内部
 | title | string | 视频标题 |
 | ownerName | string | UP 主 |
 | bvid | string | BV 号 |
-| status | string | 状态（中文）：未开始 / 进行中 / 已暂停 / 部分完成 / 已完成 |
+| status | string | 状态（中文）：未开始 / 进行中 / 已暂停 / 已完成 |
 | duration | int | 视频总时长（秒） |
 | watchedDuration | int | 已观看时长（秒） |
 | episodes | int | 总集数 |
