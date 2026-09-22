@@ -5,7 +5,7 @@ AIO Life — All-in-One 人生管理系统，记录、统计、分析个人生�
 ## 技术栈
 
 - **前端 aio-life-front**：Vue Vben Admin v5.5.9（Ant Design Vue），pnpm monorepo + Turborepo
-- **后端 aio-life-server**：Spring Boot 3.3 + Java 21 + MyBatis Plus + MySQL 8.x + Redis + Sa-Token + MinIO
+- **后端 aio-life-server**：Spring Boot 3.5.16 + Java 21 + MyBatis Plus + MySQL 8.x + Redis + Sa-Token + MinIO
 
 ## 本地启动
 

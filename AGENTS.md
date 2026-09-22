@@ -53,7 +53,7 @@ pnpm run check          # 全量检查（循环依赖 + 依赖 + 类型 + 拼写
 
 ## 后端 — aio-life-server
 
-Spring Boot 3.3 + Java 21 + MyBatis Plus + MySQL 8.x + Redis + Sa-Token + MinIO。
+Spring Boot 3.5.16 + Java 21 + MyBatis Plus + MySQL 8.x + Redis + Sa-Token + MinIO。
 
 ```bash
 cd aio-life-server
