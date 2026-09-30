@@ -26,3 +26,4 @@ clone_repository() {
 
 clone_repository "aio-life-front" "git@github.com:lys1313013/aio-life-front.git"
 clone_repository "aio-life-server" "git@github.com:lys1313013/aio-life-server.git"
+clone_repository "aio-life-mobile" "git@github.com:lys1313013/aio-life-mobile.git"

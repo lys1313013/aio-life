@@ -4,7 +4,7 @@ This file provides guidance to AI coding agents when working with code in this r
 
 ## 项目概述
 
-AIO Life — All-in-One 人生管理系统，记录、统计、分析个人生活数据。本仓库保存项目文档、编排配置和开发入口，前后端由两个独立 Git 仓库维护。
+AIO Life — All-in-One 人生管理系统，记录、统计、分析个人生活数据。本仓库保存项目文档、编排配置和开发入口，Web、后端和移动端由独立 Git 仓库维护。
 
 ## 目录结构
 
@@ -12,17 +12,34 @@ AIO Life — All-in-One 人生管理系统，记录、统计、分析个人生�
 aio-life/
 ├── aio-life-front/    # 独立前端仓库（主仓库不跟踪）
 ├── aio-life-server/   # 独立后端仓库（主仓库不跟踪）
+├── aio-life-mobile/   # 独立 uni-app x Vapor 客户端仓库（主仓库不跟踪）
 └── docs/              # 需求/技术方案文档（数据库表结构见 `aio-life-server/docs/数据库表结构.md`）
 ```
 
-## 前后端仓库操作
+## 独立仓库操作
 
 ```bash
-./scripts/setup-repositories.sh   # 缺失时克隆前后端仓库
-./scripts/pull-latest-main.sh     # 一键快进拉取前后端最新 main
+./scripts/setup-repositories.sh   # 缺失时克隆 Web、后端和移动端仓库
+./scripts/pull-latest-main.sh     # 一键快进拉取三个仓库最新 main
 ```
 
-前后端目录各自拥有独立的 Git 历史。代码修改必须在对应仓库内提交和推送；主仓库不记录前后端 commit 指针。
+三个目录各自拥有独立的 Git 历史。代码修改必须在对应仓库内提交和推送；主仓库不记录子仓库 commit 指针。
+
+## 移动端 — aio-life-mobile
+
+uni-app x Vapor 独立客户端，入口为 `src/main.ts`，页面使用 `.uvue` 和组合式 API。
+
+```bash
+cd aio-life-mobile
+npm ci
+npm run dev            # Web 预览，默认 5180，代理本地后端 45678
+npm run build          # Web 构建
+npm run build:weixin   # 微信小程序构建
+npm test              # API 契约测试
+npm run test:e2e       # Web 登录与布局测试
+```
+
+App 使用匹配版本的 HBuilderX，具体要求与验证边界见移动仓库 README。凭据、Token、签名文件不得提交。
 
 ## 前端 — aio-life-front
 

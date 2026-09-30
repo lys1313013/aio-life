@@ -38,5 +38,6 @@ pull_main() {
 
 pull_main "aio-life-front"
 pull_main "aio-life-server"
+pull_main "aio-life-mobile"
 
-printf '前后端 main 均已更新完成。\n'
+printf 'Web、后端和移动端 main 均已更新完成。\n'
