@@ -6,6 +6,7 @@ node_modules/
 dist/
 build/
 *.log
+test-results/
 
 # Web、后端和移动端是独立 Git 仓库，由 scripts/setup-repositories.sh 初始化
 /aio-life-front/
