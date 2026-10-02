@@ -44,6 +44,8 @@ npm run test:commit    # 提交前统一验证（单元、H5 E2E、微信构建�
 
 App 使用匹配版本的 HBuilderX，具体要求与验证边界见移动仓库 README。凭据、Token、签名文件不得提交。
 
+微信主包工程预算为 1600 KB，每包硬上限 2048 KB。业务专属服务、解析器和重量 npm 依赖必须归入对应分包，不能仅登记页面分包却把依赖留在公共目录。共享小工具独立提取，禁止跨业务分包同步导入；依赖归属与预算统一维护在移动仓库 `scripts/weixin-package-policy.json`。排查读取 `artifacts/weixin-size/` 的文件、模块体积报告，具体机制见移动仓库 `AGENTS.md` 的“避免主包再次超限”。
+
 移动端间距唯一配置为 `aio-life-mobile/src/styles/spacing.json`，页面和组件必须引用生成的 SCSS 变量或公共类，不能复制数值。页面边距只能由一层容器提供，避免 `MobilePage` 与业务页面重复 padding；具体规范及生成/验收命令见 `aio-life-mobile/AGENTS.md` 的“统一间距与视觉验收”。
 
 ## 前端 — aio-life-front
@@ -69,6 +71,7 @@ pnpm run check          # 全量检查（循环依赖 + 依赖 + 类型 + 拼写
 - 响应格式 `{ rscode: '0', data: ... }`，成功码为 `'0'`
 - 适配暗色模式，以及手机、平板和桌面端；响应式布局不能只验证手机和电脑，还需检查平板等中间宽度，避免移动端规则在平板上产生过宽、过疏或比例失衡的问题
 - 界面尽可能简洁，Web 和移动端均遵循：能用图标清楚表达的操作或状态，只展示图标，不再配可见文字或重复说明；图标含义不明确时才保留必要的简短文字。图标按钮必须提供可访问名称（如 `aria-label`）。确需解释时，优先通过问号图标按需展示简短提示，不常驻铺开文字，也不为无歧义的内容额外添加问号。减少不必要的边框、分隔线和层级，具体见前端 `AGENTS.md` 的“界面表达规范”
+- 移动端滚动列表统一触底自动加载下一页，禁止常驻“继续加载 / 加载更多 / 下一页”分页按钮。`MobilePage` 页面监听 `reachbottom`，自有 `scroll-view` 监听 `scrolltolower`；公共 `LoadMore` 只展示加载状态及失败重试。请求中不得重复发起分页；刷新、筛选和离页后的旧响应不得覆盖新状态；到末页或返回空页必须停止。分页失败保留已有列表和页码，仅在列表底部重试失败页，不得重置到第一页。新增或修改分页时须验证实际滚动触发、去重、末页停止和失败恢复。
 - 接口调用必须有 loading 效果
 - 编辑弹窗上下居中，可无 title；确认弹窗在按钮旁弹出
 - 别名 `#` 指向 `apps/web-antd/src/`
@@ -104,6 +107,7 @@ mvn package -DskipTests          # 打包
 
 ### 技术要点
 
+- MySQL 业务数据访问统一使用 MyBatis-Plus / MyBatis Mapper；禁止生产业务代码使用 `JdbcTemplate`、`NamedParameterJdbcTemplate`、`JdbcClient` 或直接 JDBC，禁止在 Service / Guard 内嵌 SQL。联表、行锁和特殊更新放入 Mapper，具体规则与自动检查见 `aio-life-server/AGENTS.md` 的“数据库访问规范（强制）”。
 - 逻辑删除：MyBatis Plus 全局配置 `is_deleted` 字段
 - 对象映射：MapStruct，Lombok 配合 `lombok-mapstruct-binding`
 - 环境变量：数据库密码、Redis、MinIO、邮件等敏感配置通过 `AIO_LIFE_*` 环境变量注入
