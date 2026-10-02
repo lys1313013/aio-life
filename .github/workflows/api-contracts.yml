@@ -3,9 +3,19 @@ name: Pinned cross-repository API contracts
 on:
   push:
     branches: [main]
-    paths: ['scripts/generate-api-contracts.py', 'scripts/contract-revisions.json', '.github/workflows/api-contracts.yml']
+    paths:
+      [
+        "scripts/generate-api-contracts.py",
+        "scripts/contract-revisions.json",
+        ".github/workflows/api-contracts.yml",
+      ]
   pull_request:
-    paths: ['scripts/generate-api-contracts.py', 'scripts/contract-revisions.json', '.github/workflows/api-contracts.yml']
+    paths:
+      [
+        "scripts/generate-api-contracts.py",
+        "scripts/contract-revisions.json",
+        ".github/workflows/api-contracts.yml",
+      ]
   workflow_dispatch:
 
 permissions:
@@ -47,18 +57,27 @@ jobs:
           ref: ${{ fromJSON(steps.revisions.outputs.lock)['aio-life-mobile'] }}
           path: aio-life-mobile
           token: ${{ secrets.CONTRACTS_READ_TOKEN || github.token }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
       - uses: pnpm/action-setup@v4
         with:
           package_json_file: aio-life-front/package.json
-      - uses: actions/setup-node@v4
+      # Resolve the store in the same packageManager context as pnpm install.
+      - name: Resolve frontend pnpm store
+        id: pnpm-store
+        working-directory: aio-life-front
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+          echo "version=$(pnpm --version)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
         with:
-          node-version: '22'
-          cache: pnpm
-          cache-dependency-path: aio-life-front/pnpm-lock.yaml
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.pnpm-store.outputs.version }}-${{ hashFiles('aio-life-front/pnpm-lock.yaml') }}
       - name: Install locked formatter and linter
         working-directory: aio-life-front
         env:
-          LEFTHOOK: '0'
+          LEFTHOOK: "0"
         run: pnpm install --frozen-lockfile
       - name: Check both clients against the pinned server
         run: python3 scripts/generate-api-contracts.py --check
