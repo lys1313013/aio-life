@@ -1,0 +1,64 @@
+name: Pinned cross-repository API contracts
+
+on:
+  push:
+    branches: [main]
+    paths: ['scripts/generate-api-contracts.py', 'scripts/contract-revisions.json', '.github/workflows/api-contracts.yml']
+  pull_request:
+    paths: ['scripts/generate-api-contracts.py', 'scripts/contract-revisions.json', '.github/workflows/api-contracts.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Load immutable repository revisions
+        id: revisions
+        run: |
+          python3 - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          revisions = json.loads(Path('scripts/contract-revisions.json').read_text())
+          assert set(revisions) == {'aio-life-server', 'aio-life-front', 'aio-life-mobile'}
+          assert all(re.fullmatch(r'[a-f0-9]{40}', value) for value in revisions.values())
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('lock=' + json.dumps(revisions, separators=(',', ':')) + '\n')
+          PY
+      - uses: actions/checkout@v4
+        with:
+          repository: lys1313013/aio-life-server
+          ref: ${{ fromJSON(steps.revisions.outputs.lock)['aio-life-server'] }}
+          path: aio-life-server
+          token: ${{ secrets.CONTRACTS_READ_TOKEN || github.token }}
+      - uses: actions/checkout@v4
+        with:
+          repository: lys1313013/aio-life-front
+          ref: ${{ fromJSON(steps.revisions.outputs.lock)['aio-life-front'] }}
+          path: aio-life-front
+          token: ${{ secrets.CONTRACTS_READ_TOKEN || github.token }}
+      - uses: actions/checkout@v4
+        with:
+          repository: lys1313013/aio-life-mobile
+          ref: ${{ fromJSON(steps.revisions.outputs.lock)['aio-life-mobile'] }}
+          path: aio-life-mobile
+          token: ${{ secrets.CONTRACTS_READ_TOKEN || github.token }}
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: aio-life-front/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: aio-life-front/pnpm-lock.yaml
+      - name: Install locked formatter and linter
+        working-directory: aio-life-front
+        env:
+          LEFTHOOK: '0'
+        run: pnpm install --frozen-lockfile
+      - name: Check both clients against the pinned server
+        run: python3 scripts/generate-api-contracts.py --check
