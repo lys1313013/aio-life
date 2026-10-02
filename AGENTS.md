@@ -37,7 +37,10 @@ npm run build          # Web 构建
 npm run build:weixin   # 微信小程序构建
 npm test              # API 契约测试
 npm run test:e2e       # Web 登录与布局测试
+npm run test:commit    # 提交前统一验证（单元、H5 E2E、微信构建与包体）
 ```
+
+移动端采用“开发过程中按需验证、提交前统一测试”：日常修改不默认运行全量测试或双端构建；仅在定位问题或用户要求时运行相关检查。准备提交最终改动时，在移动仓库执行一次 `npm run test:commit`，E2E 已包含 H5 构建，不再额外重复构建。相同代码已通过的检查不重复执行；后续修改只重跑受影响的检查，影响不明确时重新全量验证。具体执行与日志规则见移动仓库 `AGENTS.md`。
 
 App 使用匹配版本的 HBuilderX，具体要求与验证边界见移动仓库 README。凭据、Token、签名文件不得提交。
 
