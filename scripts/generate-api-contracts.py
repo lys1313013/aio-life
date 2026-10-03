@@ -71,7 +71,7 @@ def collect(name):
   before=masked[:m.start()]
   if before.count('{')-before.count('}')!=1:continue
   typ,field=m.groups()
-  if field in ['parentIdSpecified','ratingProvided']:continue
+  if field in ['parentIdSpecified','ratingProvided','avatarFileIdSpecified']:continue
   typ=re.sub(r'\s+',' ',typ).replace('< ','<').replace(' >','>')
   data[field]=typ
   nested=re.sub(r'(?:java.util.)?List<([^>]+)>',r'\1',typ)
@@ -158,7 +158,7 @@ for p in sorted(base.rglob('*Controller.java')):
    if q:keys+=['page','pageSize']+names(q[1].split('.')[-1]);continue
    typed=re.search(r'(?:\b|\.)(\w+Query)\s+\w+\s*$',param)
    if typed:keys+=names(typed[1]);continue
-   primitive=re.search(r'\b(?:String|int|Integer|Long|long|Boolean|boolean)\s+(\w+)\s*$',param)
+   primitive=re.search(r'\b(?:(?:String|int|Integer|Long|long|Boolean|boolean)|(?:List|Set)<\s*(?:String|Integer|Long|Boolean)\s*>)\s+(\w+)\s*$',param)
    if primitive:
     alias=re.search(r'@RequestParam\((?:value\s*=\s*)?"([^"]+)"',param)
     keys.append(alias[1] if alias else primitive[1])
