@@ -107,41 +107,6 @@ def ts_type(t):
  if t in ('Boolean','boolean'):return 'boolean'
  if t=='ProgressStatusEnum':return "'not_started' | 'in_progress' | 'completed' | 'on_hold'"
  return 'unknown'
-lines=['/** 自动生成：运行 scripts/generate-api-contracts.py；ID 为字符串，显式 null 保留清空语义。 */']
-for name,fields in sorted(models.items()):
- lines.append(f'export interface {name} {{')
- for key,t in fields.items():lines.append(f'  {key}?: {ts_type(t)} | null;')
- lines.append('}\n')
-lines.append('export interface ApiRequests {')
-for name in sorted(models):lines.append(f'  {name}: {name};')
-lines.extend(['}\n','const fields: Record<string, Record<string, string | null>> = {'])
-for name,keys in sorted(models.items()):
- lines.append(f'  {name}: {{')
- for key,t in keys.items():
-  nested=t[t.index('<')+1:-1] if t.startswith(('List<','java.util.List<')) else t
-  lines.append(f'    {key}: {json.dumps(nested) if nested in models else "null"},')
- lines.append('  },')
-lines.extend(['};\n', '''/** 在发送点选择允许的字段，防止列表记录、审计字段和客户端派生字段被整对象回传。 */
-export function pickPayload<K extends keyof ApiRequests>(name: K, value: unknown): ApiRequests[K] {
-  const input = (value ?? {}) as Record<string, unknown>;
-  const result: Record<string, unknown> = {};
-  for (const [key, nested] of Object.entries(fields[name] ?? {})) {
-    if (!Object.hasOwn(input, key) || input[key] === undefined) continue;
-    const item = input[key];
-    result[key] = nested && item !== null
-      ? (Array.isArray(item)
-        ? item.map((entry) => pickPayload(nested as K, entry))
-        : pickPayload(nested as K, item))
-      : item;
-  }
-  return result as ApiRequests[K];
-}
-
-export function pickPayloadList<K extends keyof ApiRequests>(name: K, values: unknown[]): ApiRequests[K][] {
-  return values.map((value) => pickPayload(name, value));
-}
-'''])
-code='\n'.join(lines)
 queries={}
 def names(name):
  if name not in files:return []
@@ -163,9 +128,7 @@ for p in sorted(base.rglob('*Controller.java')):
     alias=re.search(r'@RequestParam\((?:value\s*=\s*)?"([^"]+)"',param)
     keys.append(alias[1] if alias else primitive[1])
   queries[prefix+m['path']]=sorted(set(keys))
-extra='\nconst queryFields: Record<string, string[]> = '+json.dumps(queries,ensure_ascii=False,indent=2)+';\n'
-extra+='\nconst requestModels: Array<{ method: string; path: string; model: keyof ApiRequests; list: boolean }> = [\n'+''.join('  '+json.dumps(dict(method=r['verb'],path=r['path'],model=r['model'],list=r['list']))+',\n' for r in routes)+'];\n'
-extra+='''
+request_helpers='''
 function samePath(pattern: string, path: string): boolean {
   const expected = pattern.split('/');
   const actual = path.split('?')[0]?.split('/') ?? [];
@@ -197,18 +160,67 @@ export function minimalRequestPayload(path: string, method: string, value: unkno
 }
 '''
 
+def render_contracts(models, routes, queries):
+ lines=['/** 自动生成：运行 scripts/generate-api-contracts.py；ID 为字符串，显式 null 保留清空语义。 */']
+ for name,fields in sorted(models.items()):
+  lines.append(f'export interface {name} {{')
+  for key,t in fields.items():lines.append(f'  {key}?: {ts_type(t)} | null;')
+  lines.append('}\n')
+ lines.append('export interface ApiRequests {')
+ for name in sorted(models):lines.append(f'  {name}: {name};')
+ lines.extend(['}\n','const fields: Record<string, Record<string, string | null>> = {'])
+ for name,keys in sorted(models.items()):
+  lines.append(f'  {name}: {{')
+  for key,t in keys.items():
+   nested=t[t.index('<')+1:-1] if t.startswith(('List<','java.util.List<')) else t
+   lines.append(f'    {key}: {json.dumps(nested) if nested in models else "null"},')
+  lines.append('  },')
+ lines.extend(['};\n', '''/** 在发送点选择允许的字段，防止列表记录、审计字段和客户端派生字段被整对象回传。 */
+export function pickPayload<K extends keyof ApiRequests>(name: K, value: unknown): ApiRequests[K] {
+  const input = (value ?? {}) as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+  for (const [key, nested] of Object.entries(fields[name] ?? {})) {
+    if (!Object.hasOwn(input, key) || input[key] === undefined) continue;
+    const item = input[key];
+    result[key] = nested && item !== null
+      ? (Array.isArray(item)
+        ? item.map((entry) => pickPayload(nested as K, entry))
+        : pickPayload(nested as K, item))
+      : item;
+  }
+  return result as ApiRequests[K];
+}
+
+export function pickPayloadList<K extends keyof ApiRequests>(name: K, values: unknown[]): ApiRequests[K][] {
+  return values.map((value) => pickPayload(name, value));
+}
+'''])
+ code='\n'.join(lines)
+ extra='\nconst queryFields: Record<string, string[]> = '+json.dumps(queries,ensure_ascii=False,indent=2)+';\n'
+ extra+='\nconst requestModels: Array<{ method: string; path: string; model: keyof ApiRequests; list: boolean }> = [\n'+''.join('  '+json.dumps(dict(method=r['verb'],path=r['path'],model=r['model'],list=r['list']))+',\n' for r in routes)+'];\n'
+ return code+extra+request_helpers
+
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--check', action='store_true')
 args = parser.parse_args()
 formatter = ROOT / 'aio-life-front/node_modules/.bin/prettier'
 if not formatter.exists():
  raise SystemExit('Install frontend dependencies before generating contracts (pnpm install).')
-output = subprocess.run([str(formatter), '--parser', 'typescript'], input=code+extra, cwd=ROOT / 'aio-life-front', text=True, check=True, capture_output=True).stdout
-# Use the same formatting rules as checked-in API code without mutating files.
-lint = subprocess.run([str(ROOT/'aio-life-front/node_modules/.bin/eslint'), '--stdin', '--stdin-filename', 'apps/web-antd/src/api/payload.ts', '--fix-dry-run', '--format', 'json'], input=output, cwd=ROOT/'aio-life-front', text=True, check=True, capture_output=True)
-output = json.loads(lint.stdout)[0].get('output', output)
 changed = []
 for dest in [ROOT/'aio-life-front/apps/web-antd/src/api/payload.ts', ROOT/'aio-life-mobile/src/services/api-payload.ts']:
+ # Web no longer exposes LLM chat or model settings. Keep its generated contracts
+ # aligned with that scope without changing the backend or the mobile contract.
+ is_web = dest.is_relative_to(ROOT/'aio-life-front')
+ client_models = {name: fields for name, fields in models.items()
+                  if not is_web or not files[name].is_relative_to(base/'llm')}
+ client_routes = [route for route in routes if route['model'] in client_models]
+ client_queries = {path: fields for path, fields in queries.items()
+                   if not is_web or not path.startswith('/llm/')}
+ source = render_contracts(client_models, client_routes, client_queries)
+ output = subprocess.run([str(formatter), '--parser', 'typescript'], input=source, cwd=ROOT / 'aio-life-front', text=True, check=True, capture_output=True).stdout
+ # Use the same formatting rules as checked-in API code without mutating files.
+ lint = subprocess.run([str(ROOT/'aio-life-front/node_modules/.bin/eslint'), '--stdin', '--stdin-filename', 'apps/web-antd/src/api/payload.ts', '--fix-dry-run', '--format', 'json'], input=output, cwd=ROOT/'aio-life-front', text=True, check=True, capture_output=True)
+ output = json.loads(lint.stdout)[0].get('output', output)
  if not dest.exists() or dest.read_text() != output:
   changed.append(str(dest.relative_to(ROOT)))
   if not args.check: dest.write_text(output)
