@@ -7,6 +7,7 @@ AIO Life — All-in-One 人生管理系统，记录、统计、分析个人生�
 - **前端 aio-life-front**：Vue Vben Admin v5.5.9（Ant Design Vue），pnpm monorepo + Turborepo
 - **后端 aio-life-server**：Spring Boot 3.5.16 + Java 21 + MyBatis Plus + MySQL 8.x + Redis + Sa-Token + MinIO
 - **移动端 aio-life-mobile**：uni-app x Vapor，首版实现账号密码登录与首页，详见[移动端仓库](https://github.com/lys1313013/aio-life-mobile)
+- **查询服务 aio-query**：独立 Java 21 + Hasura v3 + MySQL Connector，首期开放 `time_record` 的授权目录、明细和统计；目前为本地独立仓库，运行及权限说明见 `aio-query/README.md`，远程仓库尚未创建。
 
 ## 本地启动
 

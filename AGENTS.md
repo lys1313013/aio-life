@@ -102,7 +102,7 @@ mvn package -DskipTests          # 打包
 | `membership` | 会员维护：会员记录、统计 |
 | `feedback` | 用户反馈：反馈提交、评论、管理端处理 |
 | `relationship` | 人际关系图谱（Neo4j），可通过 `AIO_LIFE_NEO4J_ENABLED` 开关 |
-| `llm` | LLM/AI 功能（LangChain4j + OpenAI），API Key 管理 |
+| `llm` | 历史会话、消息及模型密钥配置管理；不提供大模型调用 |
 | `mcp` | MCP 协议支持（自定义注解驱动的 Tool 注册），含认证层 |
 
 ### 技术要点
