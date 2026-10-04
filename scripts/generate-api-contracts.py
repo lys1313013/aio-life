@@ -71,7 +71,7 @@ def collect(name):
   before=masked[:m.start()]
   if before.count('{')-before.count('}')!=1:continue
   typ,field=m.groups()
-  if field in ['parentIdSpecified','ratingProvided','avatarFileIdSpecified']:continue
+  if field in ['parentIdSpecified','ratingProvided','avatarFileIdSpecified','providerIdProvided']:continue
   typ=re.sub(r'\s+',' ',typ).replace('< ','<').replace(' >','>')
   data[field]=typ
   nested=re.sub(r'(?:java.util.)?List<([^>]+)>',r'\1',typ)
@@ -92,6 +92,18 @@ for p in sorted(base.rglob('*Controller.java')):
   q=re.search(r'@RequestBody\s+(List<)?([\w.]+)>?\s+\w+',m['params'])
   if q:
    arr,name=q.groups();name=re.sub(r'^top\.aiolife\.[\w.]+\.pojo\.req\.', '', name).replace('.', '_')
+   # Imported nested request records can be referenced by their short Java name.
+   # Resolve only types declared in this controller or its explicit imports;
+   # never guess from unrelated same-named models elsewhere in the repository.
+   if name not in files:
+    candidates = {p.stem + '_' + name} & files.keys()
+    for imported, wildcard in re.findall(r'import\s+(?:static\s+)?(\w+(?:\.\w+)*)(\.\*)?\s*;', s):
+     parts = imported.split('.')
+     candidate = parts[-1] + '_' + name if wildcard else '_'.join(parts[-2:])
+     if (wildcard or parts[-1] == name) and candidate in virtual:
+      candidates.add(candidate)
+    if len(candidates) == 1:name = next(iter(candidates))
+    elif len(candidates) > 1:raise ValueError(f'Ambiguous request model {name}: {p}')
    if name not in files:raise ValueError(f'Unknown request model {name}: {m["verb"]} {prefix+m["path"]}')
    collect(name);routes.append(dict(verb=m['verb'],path=prefix+m['path'],model=name,list=bool(arr)))
 # InputSchema for MCP arguments, raw third-party predictions and menu metadata remain intentionally dynamic.
