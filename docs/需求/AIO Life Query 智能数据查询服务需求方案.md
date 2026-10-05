@@ -1,12 +1,12 @@
-# AIO Query 智能数据查询服务需求方案
+# AIO Life Query 智能数据查询服务需求方案
 
-版本：v0.3 首期实现；日期：2026-10-05；状态：`time_record` 单表实现及本地验证，未生产部署。
+版本：v0.4 直接 Token 校验与 MCP；日期：2026-10-05；状态：`time_record` 单表实现及本地验证，未生产部署。
 
-已确认：Java、独立部署、AI 结构发现与查询、权限隔离、引入 Hasura。本文其余范围与额度为设计建议。
+已确认：Java、独立部署、AI 结构发现与查询、权限隔离、引入 Hasura、直接调用 AIO Life 校验 Token / API Key、MCP 接入。本文其余范围与额度为设计建议。
 
-首期实现位于本地独立仓库 `aio-query/`，配套授权代码位于 `aio-life-server` 的 `sso.query`。运行方式、真实限制和验收记录以 `aio-query/README.md` 为准。以下章节保留完整目标设计；首期仅实现 REST、短期授权和单表明细/统计，尚未实现长期应用授权、授权管理 UI、MCP、取消接口及多表关系。网关采用更小的 GraphQL 子集：单根字段，拒绝片段与指令，统计也限制 93 天；审计使用独立持久卷，无业务库新增表。
+首期实现位于本地独立仓库 `aio-life-query/`，配套授权代码位于 `aio-life-server` 的 `sso.query`。运行方式、真实限制和验收记录以 `aio-life-query/README.md` 为准。以下章节保留完整目标设计；首期已实现 REST、MCP、直接凭据校验和单表明细/统计；尚未实现逐应用长期授权、授权管理 UI、取消接口及多表关系。当前固定为 `aio-life-query` / `time.read`，通过功能开关、现有凭据与二级锁放行；以下涉及用户授予独立应用 scopes 的内容属于后续目标，不是当前已经存在的权限事实。网关采用更小的 GraphQL 子集：单根字段，拒绝片段与指令，统计也限制 93 天；审计使用独立持久卷，无业务库新增表。
 
-**结论：采用 `aio-query` Java 网关 + Hasura 查询引擎 + MySQL Connector。AI 读取授权后的业务模型并提交 GraphQL；用户身份、应用授权、二级锁由 AIO Life 判定，行列权限由 Hasura 在查询计划中落实。**
+**结论：采用 `aio-life-query` Java 网关 + Hasura 查询引擎 + MySQL Connector。AI 读取授权后的业务模型并提交 GraphQL；用户身份、应用授权、二级锁由 AIO Life 判定，行列权限由 Hasura 在查询计划中落实。**
 
 本版替代 v0.1 的自由 SQL 入口、Java SQL 改写器和业务库 Mapper 执行器；不同时维护两条通用查询通道。MySQL 仍执行 Connector 生成的 SQL，AI 不需要编写 SQL。复杂业务操作继续由原业务 API 承担。
 
@@ -14,15 +14,15 @@
 
 | 项目 | 设计 |
 | --- | --- |
-| 产品 / 工程 / 部署服务名 | AIO Query / `aio-query` / `aio-query` |
+| 产品 / 工程 / 部署服务名 | AIO Life Query / `aio-life-query` / `aio-life-query` |
 | Java 根包 / 环境变量前缀 | `top.aiolife.query` / `AIO_QUERY_` |
 | Java 运行时 | Java 21 + Spring Boot，独立管理依赖 |
 | 对外入口 | REST 工具接口；MCP 适配器复用同一应用服务 |
-| 独立进程 | `aio-query`、`aio-query-hasura`、`aio-query-mysql-connector` |
+| 独立进程 | `aio-life-query`、`aio-life-query-hasura`、`aio-life-query-mysql-connector` |
 | 用户体系 | 复用 AIO Life 身份和业务锁，不复制用户密码或认证库 |
 | 模型调用 | 由外部 AI 应用负责；本服务不保存大模型 API Key |
 
-Java 负责业务接入和控制层；Hasura 是独立基础组件，其引擎实现语言不要求是 Java。`aio-query` 不用 JDBC 直查 AIO Life 业务库；自身审计等持久化遵循 MyBatis / Mapper 规范。
+Java 负责业务接入和控制层；Hasura 是独立基础组件，其引擎实现语言不要求是 Java。`aio-life-query` 不用 JDBC 直查 AIO Life 业务库；自身审计等持久化遵循 MyBatis / Mapper 规范。
 
 ## 2 Hasura 版本选择与落地前提
 
@@ -57,10 +57,10 @@ Java 负责业务接入和控制层；Hasura 是独立基础组件，其引擎�
 
 ```mermaid
 flowchart LR
-    AI[AI 应用] -->|授权凭据与 GraphQL| Q[aio-query Java 网关]
+    AI[AI 应用] -->|授权凭据与 GraphQL| Q[aio-life-query Java 网关]
     Q -->|身份、授权、二级锁| B[AIO Life 内部授权接口]
     Q -->|内部执行票据| H[Hasura v3 引擎]
-    H -->|Auth Webhook| W[aio-query 内部鉴权入口]
+    H -->|Auth Webhook| W[aio-life-query 内部鉴权入口]
     W -->|实时复核| B
     H -->|带权限谓词的执行计划| C[MySQL NDC Connector]
     C -->|只读账号| D[(业务 MySQL 或只读副本)]
@@ -72,12 +72,12 @@ flowchart LR
 | 组件 | 必须负责 | 不承担 |
 | --- | --- | --- |
 | AIO Life | 原凭据状态、账号状态、应用授权记录、二级锁和业务口径 | 通用 GraphQL 执行 |
-| `aio-query` | 授权目录、GraphQL AST 校验、锁依赖解析、额度、执行票据、审计、结果复核 | 自行改写任意 SQL |
+| `aio-life-query` | 授权目录、GraphQL AST 校验、锁依赖解析、额度、执行票据、审计、结果复核 | 自行改写任意 SQL |
 | Hasura | 角色对应的模型与字段权限、行过滤、GraphQL 计划 | 理解 AIO Life 二级锁、替用户审批授权 |
 | Connector | 把授权后的计划转为数据库查询、连接池和执行资源控制 | 决定调用者拥有哪个用户身份 |
 | MySQL | 只读对象授权、执行查询、数据库资源限制 | 自动继承 Java 业务接口的 `user_id` 条件 |
 
-外部只开放 `aio-query`。Hasura 仅接受网关服务身份的连接，Webhook 仅接受 Hasura 服务身份，Connector 仅接受 Hasura，业务库仅向 Connector 的只读账号开放。使用网络策略和服务间认证；不能只靠端口不公开或一个可伪造的来源 Header。
+外部只开放 `aio-life-query`。Hasura 仅接受网关服务身份的连接，Webhook 仅接受 Hasura 服务身份，Connector 仅接受 Hasura，业务库仅向 Connector 的只读账号开放。使用网络策略和服务间认证；不能只靠端口不公开或一个可伪造的来源 Header。
 
 运行通道不配置管理员身份旁路、NoAuth 或匿名读取；不把控制台、元数据管理端点、Connector 查询接口暴露给 AI。部署用的管理凭据与查询运行凭据分离。禁用备用认证模式，忽略外部所有 `X-Hasura-*` 身份/认证模式 Header，内部只构造允许的 Header。
 
@@ -108,20 +108,24 @@ flowchart LR
 
 AIO Life 新增应用授权记录，建议字段：`grantId`、`userId`、`appId`、`allowedScopes`、`permissionProfile`、`status`、`expiresAt`、`grantVersion`。其中 `userId` 来自登录身份，应用身份来自已注册客户端或服务凭据，客户端不能用请求体自行选择。
 
-首期同一能力模板使用统一字段白名单；需要仅统计或隐藏更多字段时，新增少量经过审核的模板，不能只改返回 JSON。模板必须同时约束输出字段、筛选字段、排序字段、聚合字段及关系。授权记录归 AIO Life 管理，`aio-query` 不保存另一份可独立放行的授权事实。
+首期同一能力模板使用统一字段白名单；需要仅统计或隐藏更多字段时，新增少量经过审核的模板，不能只改返回 JSON。模板必须同时约束输出字段、筛选字段、排序字段、聚合字段及关系。授权记录归 AIO Life 管理，`aio-life-query` 不保存另一份可独立放行的授权事实。
 
 用户在已登录的业务界面授权指定应用的业务域，可撤销、设置有效期。已有 API Key 不自动获得全部查询域，也不能绕过二级锁；必须绑定明确的应用授权。
 
 ### 5.2 身份凭据与执行票据
 
-建议 AIO Life 签发仅用于 `aio-query` 的短期不透明访问凭据。服务端记录 `audience=aio-query`、用户、应用、授权记录、来源凭据和有效期。初始有效期建议 5 分钟；每次请求仍实时检查来源凭据与授权，短有效期不能替代撤销检查。首期不实现通用 OAuth 服务，外部客户端的完整授权流程另设里程碑。
+当前实现直接使用现有 AIO Life 登录 Token 或 API Key。可信客户端把凭据放在 `Authorization: Bearer ...`，REST 与 MCP 共用此方式；工具参数中没有 token、userId 或 role。网关每次调用 `POST /api/internal/query/access/check-token`，同时携带独立 `X-AIO-Query-Service-Key`；请求体仅允许数据集 `time_record`。此路由不加入登录拦截器排除列表，原有 Sa-Token / API Key 拦截器完成身份、到期、撤销及账号状态检查，再由查询授权服务检查三个二级锁，并返回字符串 userId、固定角色/范围、凭据摘要 ID、类型及到期时间。
 
-`aio-query` 验证后为单次执行生成内部随机票据，存储于专用 Redis，建议有效期 30 秒，且不超过上游凭据剩余有效期。记录内容：
+网关不本地解析 JWT、不共享 AIO Life Redis、不缓存鉴权结果。服务密钥不能代替用户凭据；超时或认证依赖故障必须拒绝。一次执行在入口、Hasura Webhook 和结果交付前复核；MCP 的 initialize 和 tools/list 也需要实时身份校验，不使用持久会话保存用户身份。
+
+原 5 分钟 `aqt_` 签发/撤销接口保留，当前网关默认不使用它。后续如需第三方应用授权、按域 scopes 和独立生命周期，再加入授权记录或专用凭据；首期不实现通用 OAuth 服务。API Key 本身仍是原服务的通用凭据，本查询入口只提供时迹只读能力，不能宣称 API Key 已被改造成仅时迹凭据。
+
+`aio-life-query` 验证后为单次执行生成内部随机票据，存储于专用 Redis，建议有效期 30 秒，且不超过上游凭据剩余有效期。记录内容：
 
 | 字段 | 用途 |
 | --- | --- |
 | `ticketHash`、`queryId`、`audience` | 只存票据摘要，绑定 Hasura 执行及查询 |
-| `subjectRef`、`appId`、`grantId`、`credentialRef` | 绑定真实主体、应用、授权和来源凭据 |
+| `subjectRef`、`appId`、`credentialId`、`credentialType` | 当前绑定真实主体、固定应用与来源凭据；后续应用授权增加 grant 引用 |
 | `role`、`datasets`、`requiredLocks` | 服务端从当前操作推导的能力与锁依赖 |
 | `operationHash`、`variablesDigest` | 绑定网关已校验的实际操作和变量；使用受保护摘要，避免明文敏感参数 |
 | `releaseId`、`grantVersion`、`expiresAt`、`state` | 避免旧策略继续执行，限制过期和重放 |
@@ -156,7 +160,7 @@ API Key 撤销、用户禁用、授权收窄或业务重新上锁后，新的授
 
 ### 5.4 二级锁如何保持现有语义
 
-AIO Life 内部访问决策接口复用 `SecondaryLockGuard.checkMenus(userId, ...)` 和现有锁状态，不能在 `aio-query` 中复制 Redis Key 规则。对新 AI 查询入口同时执行 `/mcp/tools` 总锁；REST 与 MCP 使用相同规则。
+AIO Life 内部访问决策接口复用 `SecondaryLockGuard.checkMenus(userId, ...)` 和现有锁状态，不能在 `aio-life-query` 中复制 Redis Key 规则。对新 AI 查询入口同时执行 `/mcp/tools` 总锁；REST 与 MCP 使用相同规则。
 
 | 数据集引用 | 附加业务锁依赖 |
 | --- | --- |
@@ -271,10 +275,10 @@ Hasura 角色 Schema 反映静态角色权限；网关还要按当前应用授�
 
 | REST 接口 | MCP 工具 | 语义 |
 | --- | --- | --- |
-| `GET /api/v1/datasets` | `list_datasets` | 当前凭据可见的模型目录 |
-| `GET /api/v1/datasets/{name}` | `describe_dataset` | 单模型结构、输入能力、口径及样例 |
-| `POST /api/v1/queries/validate` | `validate_query` | 解析和授权预检，不查询业务数据 |
-| `POST /api/v1/queries/execute` | `execute_query` | 重新校验并执行单次同步查询 |
+| `GET /api/v1/datasets` | `aio_query_list_datasets` | 当前凭据可见的模型目录 |
+| `GET /api/v1/datasets/{name}` | `aio_query_describe_dataset` | 单模型结构、输入能力、口径及样例 |
+| `POST /api/v1/queries/validate` | `aio_query_validate` | 解析和授权预检，不查询业务数据 |
+| `POST /api/v1/queries/execute` | `aio_query_execute` | 重新校验并执行单次同步查询 |
 | `POST /api/v1/queries/{id}/cancel` | `cancel_query` | 取消同用户、同应用的在途查询；底层终止能力验证后启用 |
 
 首期仅一个固定逻辑数据源，客户端不能提供数据库 URL、Connector 地址、Header 转发配置或可执行权限片段。内部授权与 Webhook 不在公网接口路由中。
@@ -331,13 +335,14 @@ MCP 会话 ID 不作为认证凭据；每次工具调用使用当前凭据并进
 
 ### 7.3 内部接口契约
 
-以下接口均为新增设计，现有 AIO Life 尚未提供：
+当前新增接口如下；未来的多域/逐应用授权返回契约另行扩展：
 
 | 所属服务 / 接口 | 输入与职责 |
 | --- | --- |
-| AIO Life `POST /api/query/access-token` | 已登录用户或已绑定授权的应用换取限定 audience 的查询凭据；不能自行设置更大权限 |
-| AIO Life `POST /api/internal/query/access/evaluate` | 服务认证后，用凭据或内部上下文引用、已解析资源列表检查实时身份、授权、锁；返回允许范围、版本和到期时间 |
-| `aio-query` `POST /internal/hasura/auth` | 仅 Hasura 服务身份调用；消费执行票据并复核，按 Hasura 契约直接返回会话变量 |
+| AIO Life `POST /api/internal/query/access/check-token` | 原 Bearer + 服务密钥；现有认证链验证身份、账号及凭据，查询服务检查二级锁并返回固定 time.read 决策 |
+| AIO Life `POST /api/query/access-token` | 保留的旧短期凭据签发入口，只接受登录会话；当前网关不使用 |
+| AIO Life `POST /api/internal/query/access/evaluate` | 保留的旧凭据校验入口；当前网关默认使用 check-token |
+| `aio-life-query` `POST /internal/hasura/auth` | 仅 Hasura 服务身份调用；消费执行票据并复核，按 Hasura 契约直接返回会话变量 |
 
 `evaluate` 不能仅凭一个外部传入的 `userId` 返回该用户身份；内部上下文引用也必须绑定签发服务、来源凭据和有效期。服务间调用设置独立并发池和短超时，Webhook 不回调外部查询接口，避免递归或请求线程池耗尽。
 
@@ -386,9 +391,9 @@ MCP 会话 ID 不作为认证凭据；每次工具调用使用当前凭据并进
 
 | 部署单元 | 持有的配置 / 凭据 | 网络边界 |
 | --- | --- | --- |
-| `aio-query` | AIO Life 内部调用身份、Redis 和自身审计库访问 | 唯一对外业务入口；管理端点另设内网端口 |
-| `aio-query-hasura` | 已构建 OpenDD、AuthConfig、Connector 地址 | 仅网关可访问查询端口 |
-| `aio-query-mysql-connector` | 被批准对象的元数据、业务 MySQL 只读凭据 | 仅 Hasura 可访问 |
+| `aio-life-query` | AIO Life 内部调用身份、Redis 和自身审计库访问 | 唯一对外业务入口；管理端点另设内网端口 |
+| `aio-life-query-hasura` | 已构建 OpenDD、AuthConfig、Connector 地址 | 仅网关可访问查询端口 |
+| `aio-life-query-mysql-connector` | 被批准对象的元数据、业务 MySQL 只读凭据 | 仅 Hasura 可访问 |
 | 票据 Redis | 有 TTL 的票据摘要与状态 | 仅网关及其 Webhook 模块 |
 | 审计存储 | 审计摘要 | 与业务只读凭据分开 |
 | AIO Life | 用户、应用授权、原凭据、二级锁事实 | 内部访问决策接口仅向受信服务开放 |
@@ -404,7 +409,7 @@ Connector 数据库账号仅对已批准表/视图授予 SELECT，不授予写�
 建议在新仓库维护以下目录，现阶段不创建仓库：
 
 ```text
-aio-query/
+aio-life-query/
 ├── app/                       # Spring Boot 网关
 ├── hasura/metadata/            # OpenDD 模型、关系、权限和输入能力
 ├── hasura/auth/                # AuthConfig 模板，无秘密
@@ -511,4 +516,4 @@ H2、仅比较 SQL 字符串、仅观察 HTTP 超时，均不能替代以上端�
 - [时迹分类业务口径](../../aio-life-server/src/main/java/top/aiolife/record/service/impl/TimeTrackerCategoryServiceImpl.java)
 - [消息查询规则](../../aio-life-server/src/main/java/top/aiolife/sso/service/impl/MessageServiceImpl.java)
 
-本次仅更新需求与实现设计文档，未创建服务仓库、提交配置、接入数据库、部署 Hasura 或购买许可。示例说明设计契约；配置构建、连接器兼容、权限与负载均尚未进行运行验证。
+当前已创建本地独立 `aio-life-query` 仓库，完成时迹单表、直接 Token / API Key 校验及 MCP 接入，并使用隔离 MySQL / Redis、真实 Hasura 与 Connector 验证。验收结果见 `aio-life-query/docs/验证记录.md`；未发布生产环境，生产镜像构建、Connector 许可与真实规模性能仍需落实。
