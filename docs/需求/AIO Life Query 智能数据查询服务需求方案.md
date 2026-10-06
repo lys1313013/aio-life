@@ -305,8 +305,8 @@ Hasura 角色 Schema 反映静态角色权限；网关还要按当前应用授�
 
 ```json
 {
-  "rscode": "0",
-  "result": null,
+  "code": 0,
+  "message": null,
   "data": {
     "queryId": "8d41e4b7-4d75-4cc1-81aa-7c35c9c6e150",
     "result": {

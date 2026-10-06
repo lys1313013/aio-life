@@ -306,7 +306,7 @@ DTO 使用 Jackson 显式映射 `input_tokens`、`output_tokens`，不依赖全�
 `GET /api/timeRecord/recommendType` 仍返回字符串 ID：
 
 ```json
-{ "rscode": "0", "result": null, "data": "1003" }
+{ "code": 0, "message": null, "data": "1003" }
 ```
 
 无法推荐时 `data` 为 `""`，沿用当前 Controller 行为。`recommendNext` 仍把同一结果填入 `recommend.categoryId`，按现有 ID 字符串序列化约定输出；不新增供应商字段。当天已录满、`recommend == null` 时不调用预测。
