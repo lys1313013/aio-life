@@ -1,122 +1,138 @@
 # AGENTS.md
 
-This file provides guidance to AI coding agents when working with code in this repository.
+AIO Life — All-in-One 人生管理系统。本仓库保存项目文档、编排配置和开发入口；Web、后端和移动端各自使用独立 Git 仓库。
 
-## 项目概述
+## 沟通与工作方式
 
-AIO Life — All-in-One 人生管理系统，记录、统计、分析个人生活数据。本仓库保存项目文档、编排配置和开发入口，Web、后端和移动端由独立 Git 仓库维护。
+- 默认中文回复，代码、命令、变量名和文件路径保持英文。结论先行、简洁直接；发现方案问题或更好的做法时直接说明。
+- 修改前确认所属仓库，阅读其 `AGENTS.md` 及目标目录内适用的规范。本文维护跨仓库约定，各端实现细节见下方入口。
+- 保留已有未提交修改，只调整任务相关文件。提交和推送在改动所属仓库内执行；主仓库不跟踪三个子仓库，也不记录其 commit 指针。
+- 验证范围与改动匹配；纯文档修改检查差异和引用，无需运行业务测试或构建。交付说明改动、实际验证结果及未验证项。
+- 凭据、Token、证书和签名文件不得提交。
 
-## 目录结构
+## 仓库与规范入口
 
-```
-aio-life/
-├── aio-life-front/    # 独立前端仓库（主仓库不跟踪）
-├── aio-life-server/   # 独立后端仓库（主仓库不跟踪）
-├── aio-life-mobile/   # 独立 uni-app x Vapor 客户端仓库（主仓库不跟踪）
-└── docs/              # 需求/技术方案文档（数据库表结构见 `aio-life-server/docs/数据库表结构.md`）
-```
+| 路径 | 职责与技术 | 详细规范 |
+| --- | --- | --- |
+| `aio-life-front/` | Web：Vue Vben Admin v5.5.9、Ant Design Vue、pnpm monorepo、Turborepo | [Web AGENTS.md](aio-life-front/AGENTS.md) |
+| `aio-life-server/` | 后端：Spring Boot 3.5.16、Java 21、MyBatis Plus、MySQL 8.x、Redis、Sa-Token、MinIO | [Server AGENTS.md](aio-life-server/AGENTS.md) |
+| `aio-life-mobile/` | 移动端：uni-app x Vapor，入口 `src/main.ts`，`.uvue` 页面与组合式 API | [Mobile AGENTS.md](aio-life-mobile/AGENTS.md) |
+| `docs/` | 需求与技术方案 | 数据库表结构见 [数据库表结构.md](aio-life-server/docs/数据库表结构.md) |
 
-## 独立仓库操作
+以下脚本在主仓库执行；各端开发命令必须在对应仓库执行。
 
 ```bash
-./scripts/setup-repositories.sh   # 缺失时克隆 Web、后端和移动端仓库
-./scripts/pull-latest-main.sh     # 一键快进拉取三个仓库最新 main
+./scripts/setup-repositories.sh   # 克隆缺失的 Web、后端和移动端仓库
+./scripts/pull-latest-main.sh     # 快进拉取三个仓库的 origin/main
 ```
 
-三个目录各自拥有独立的 Git 历史。代码修改必须在对应仓库内提交和推送；主仓库不记录子仓库 commit 指针。
+拉取脚本要求子仓库处于 `main` 且工作区干净；不满足时先处理当前工作，不为拉取而丢弃修改。
 
-## Web 与移动端共同规范
+## 跨端 API 契约
 
-- 同一业务在菜单、首页卡片、首页卡片设置和快捷导航中的图标与颜色，统一引用对应菜单配置，不得分别硬编码。业务关联与公共降级集中维护，图标资产生成同步；具体规则与实现入口见 `docs/图标与颜色统一规则.md`。
+- 响应格式为 `{ code: 0, message: null, data: ... }`，成功码是整数 `0`；不能仅凭 HTTP 200 判断业务成功。
+- ID 全程使用 **string**，包括接口、路由、表单、组件 key、比较与提交；禁止转为数字，避免大整数精度丢失。
+- 后端未覆盖序列化器的 `Long/long` 响应字段默认输出字符串；`Integer/int` 输出数字。`PageResp.total` 使用字段级 `CountSerializer`，返回 `number | null`，不能仅凭字段名推断类型。
+- 前端类型按实际 JSON 声明。旧版字符串计数在读取边界解析，不能用真假值判断数量；TypeScript 类型断言不会转换运行时值。细节见 Web 规范“Long 响应与数值判断”。
 
-- 卡片（包括首页目标、纪念日、闪念等）及其他异步内容区域的 loading 占位高度必须尽可能接近加载后的实际展示高度，避免状态切换推动后续内容、造成页面跳动。首次加载按对应内容布局预留空间；刷新保留已有内容（包括空态）及高度，局部 loading 提示不得额外占用布局空间。不能用统一骨架行数或任意大高度套用所有卡片，也不能靠永久留白或裁切内容实现高度一致。
-- 修改相关布局时，需对比 loading、有内容、空态、错误重试及已有内容刷新时的区域高度和后续内容位置，覆盖手机、平板、桌面及深浅主题。具体实现与验收见 `aio-life-front/AGENTS.md` 和 `aio-life-mobile/AGENTS.md` 的“Loading 高度与布局稳定（必须遵守）”。
+## Web 与移动端共同 UI 规范
+
+### 图标、表达与交互
+
+- 同一业务在菜单、首页卡片、卡片设置和快捷导航中的图标与颜色统一引用菜单配置，禁止分别硬编码；业务关联、公共降级和图标资产同步规则见 [图标与颜色统一规则.md](docs/图标与颜色统一规则.md)。
+- 含义清楚的操作或状态只展示图标，图标按钮提供可访问名称（如 `aria-label`）；含义不明确时保留必要短文案。说明优先通过问号图标按需展示，无歧义的内容不额外加问号。减少不必要的边框、分隔线和层级，保留用户需要的业务数据。
+- 接口调用必须有可感知的 loading，绑定到受影响的最小 UI 单元；局部操作成功后优先更新局部状态，避免无必要的整页刷新。
+- 编辑弹窗上下居中，可无 title；确认弹窗在触发按钮旁弹出。
+- 适配手机、平板、桌面及深浅主题；检查平板等中间宽度，避免移动端规则造成过宽、过疏或比例失衡。
+
+### Loading 高度与布局稳定
+
+- 首页目标、纪念日、闪念等卡片及其他异步区域，首次 loading 按实际内容结构预留空间，高度尽可能接近展示态；不能统一套用骨架行数或任意大高度，也不能靠永久留白、裁切内容实现一致。
+- 刷新、重试或后台更新时保留已有内容（包括空态）及高度；局部 loading 不参与布局，不增加行、不挤动标题与操作入口。
+- 修改相关布局时，对比 loading、有内容、空态、错误重试和已有内容刷新时的区域高度及后续内容位置；覆盖空数据、单条、多条、长文本、三类视口及深浅主题。
+- 具体实现和动态验收见 Web、Mobile 规范的“Loading 高度与布局稳定（必须遵守）”。
+
+## Web — aio-life-front
+
+```bash
+cd aio-life-front
+pnpm run dev:antd       # 启动 web-antd 开发服务器
+pnpm run dev            # monorepo 开发入口
+pnpm run build          # 生产构建
+pnpm run lint           # 代码检查
+pnpm run format         # 格式化
+pnpm run test:unit      # Vitest 单元测试
+pnpm run check          # 循环依赖、依赖、类型、拼写检查
+```
+
+- 别名 `#` 指向 `apps/web-antd/src/`。
+- 架构、请求客户端、附件、路由权限及界面实现细节见 Web `AGENTS.md`。
 
 ## 移动端 — aio-life-mobile
-
-uni-app x Vapor 独立客户端，入口为 `src/main.ts`，页面使用 `.uvue` 和组合式 API。
 
 ```bash
 cd aio-life-mobile
 npm ci
-npm run dev            # Web 预览，默认 5180，代理本地后端 45678
-npm run build          # Web 构建
-npm run build:weixin   # 微信小程序构建
-npm test              # API 契约测试
-npm run test:e2e       # Web 登录与布局测试
-npm run test:commit    # 提交前统一验证（单元、H5 E2E、微信构建与包体）
+npm run dev            # H5 预览：5180，代理本地后端 45678
+npm run build          # H5 构建
+npm run build:weixin   # 微信构建及包体检查
+npm test               # 单元与 API 契约等检查
+npm run test:e2e       # H5 登录与布局测试
+npm run test:commit    # 提交前统一验证
 ```
 
-移动端采用“开发过程中按需验证、提交前统一测试”：日常修改不默认运行全量测试或双端构建；仅在定位问题或用户要求时运行相关检查。准备提交最终改动时，在移动仓库执行一次 `npm run test:commit`，E2E 已包含 H5 构建，不再额外重复构建。相同代码已通过的检查不重复执行；后续修改只重跑受影响的检查，影响不明确时重新全量验证。具体执行与日志规则见移动仓库 `AGENTS.md`。
+### 开发与验证
 
-App 使用匹配版本的 HBuilderX，具体要求与验证边界见移动仓库 README。凭据、Token、签名文件不得提交。
+- 页面开发和调整先查看现有 Web 实现，以业务逻辑、接口契约、信息层级及操作入口为基准，再适配移动端；具体对照验收见 Mobile 规范。
+- 保持 uni-app x Vapor；App 使用匹配版本的 HBuilderX，版本要求与验证边界见移动仓库 README。
+- 开发过程中按需验证，不默认运行全量测试或双端构建。准备提交最终改动时执行一次 `npm run test:commit`；纯文档、注释修改按 Mobile 规范只检查差异。
+- `test:commit` 包含单元检查、完整 H5 E2E、微信构建与包体检查；E2E 已包含 H5 构建，不额外重复构建。同一代码与相关环境未变时不重复已通过检查；修复后只重跑受影响阶段，影响不明确时重新全量验证。执行与日志规则见 Mobile 规范“测试执行时机与成本”。
+- 分别报告 H5、微信编译、模拟器、真机、App 和发布结果；上传成功不代表体验版、审核通过或正式发布。
 
-微信主包工程预算为 1600 KB，每包硬上限 2048 KB。业务专属服务、解析器和重量 npm 依赖必须归入对应分包，不能仅登记页面分包却把依赖留在公共目录。共享小工具独立提取，禁止跨业务分包同步导入；依赖归属与预算统一维护在移动仓库 `scripts/weixin-package-policy.json`。排查读取 `artifacts/weixin-size/` 的文件、模块体积报告，具体机制见移动仓库 `AGENTS.md` 的“避免主包再次超限”。
+### 分页与样式
 
-移动端间距唯一配置为 `aio-life-mobile/src/styles/spacing.json`，页面和组件必须引用生成的 SCSS 变量或公共类，不能复制数值。页面边距只能由一层容器提供，避免 `MobilePage` 与业务页面重复 padding；具体规范及生成/验收命令见 `aio-life-mobile/AGENTS.md` 的“统一间距与视觉验收”。
+- 滚动列表统一触底自动加载下一页，禁止常驻“继续加载 / 加载更多 / 下一页”按钮。`MobilePage` 监听 `reachbottom`，自有 `scroll-view` 监听 `scrolltolower`；公共 `LoadMore` 只展示加载状态和失败重试。
+- 请求中不重复分页；刷新、筛选、离页后的旧响应不得覆盖新状态；到末页或返回空页时停止。分页失败保留列表和页码，在底部重试失败页，不重置到第一页；验证实际滚动触发、去重、末页停止和失败恢复。
+- 间距唯一来源为 `src/styles/spacing.json`，页面和组件引用生成的 SCSS 变量或公共类，禁止复制数值。页面边距只有一个所有者，避免 `MobilePage` 与业务页重复 padding。
+- 排版唯一来源为 `src/styles/typography.json`，使用语义角色，禁止业务页另建字号等数值配置。生成与验收规则见 Mobile 规范“统一间距与视觉验收”和“统一排版”。
 
-## 前端 — aio-life-front
+### 微信包体
 
-基于 **Vue Vben Admin v5.5.9** 的 Ant Design Vue 版本，pnpm monorepo（Turborepo 编排）。
-
-```bash
-cd aio-life-front
-pnpm run dev            # 启动 web-antd 开发服务器（默认）
-pnpm run dev:antd       # 同上，显式指定
-pnpm run build          # 生产构建
-pnpm run lint           # ESLint 检查
-pnpm run format         # Prettier 格式化
-pnpm run test:unit      # Vitest 单元测试
-pnpm run check          # 全量检查（循环依赖 + 依赖 + 类型 + 拼写）
-```
-
-详细架构、编码规范见 `aio-life-front/AGENTS.md`。
-
-### 关键约定
-
-- 后端返回的 ID 是 **string** 类型
-- 响应格式 `{ code: 0, message: null, data: ... }`，成功码为 `0`
-- 适配暗色模式，以及手机、平板和桌面端；响应式布局不能只验证手机和电脑，还需检查平板等中间宽度，避免移动端规则在平板上产生过宽、过疏或比例失衡的问题
-- 界面尽可能简洁，Web 和移动端均遵循：能用图标清楚表达的操作或状态，只展示图标，不再配可见文字或重复说明；图标含义不明确时才保留必要的简短文字。图标按钮必须提供可访问名称（如 `aria-label`）。确需解释时，优先通过问号图标按需展示简短提示，不常驻铺开文字，也不为无歧义的内容额外添加问号。减少不必要的边框、分隔线和层级，具体见前端 `AGENTS.md` 的“界面表达规范”
-- 移动端滚动列表统一触底自动加载下一页，禁止常驻“继续加载 / 加载更多 / 下一页”分页按钮。`MobilePage` 页面监听 `reachbottom`，自有 `scroll-view` 监听 `scrolltolower`；公共 `LoadMore` 只展示加载状态及失败重试。请求中不得重复发起分页；刷新、筛选和离页后的旧响应不得覆盖新状态；到末页或返回空页必须停止。分页失败保留已有列表和页码，仅在列表底部重试失败页，不得重置到第一页。新增或修改分页时须验证实际滚动触发、去重、末页停止和失败恢复。
-- 接口调用必须有 loading 效果
-- 编辑弹窗上下居中，可无 title；确认弹窗在按钮旁弹出
-- 别名 `#` 指向 `apps/web-antd/src/`
+- 主包工程预算 **1600 KB**，每包硬上限 **2048 KB**。预算与重量依赖归属统一维护在 `scripts/weixin-package-policy.json`。
+- 业务专属服务、解析器、资源和重量 npm 依赖必须归入对应分包，不能只登记页面分包而把依赖留在公共目录。共享小工具独立提取，禁止跨业务分包同步导入。
+- 排查读取 `artifacts/weixin-size/` 的文件与模块体积报告；不能通过上调预算、删除检查或业务功能、关闭 Vapor 绕过限制。具体机制见 Mobile 规范“避免主包再次超限”。
 
 ## 后端 — aio-life-server
 
-Spring Boot 3.5.16 + Java 21 + MyBatis Plus + MySQL 8.x + Redis + Sa-Token + MinIO。
-
 ```bash
 cd aio-life-server
-mvn spring-boot:run              # 启动（端口 45678，context-path /api）
-mvn test                         # 运行测试
-mvn package -DskipTests          # 打包
+mvn spring-boot:run              # API：45678，context-path /api
+mvn test                         # 测试
+mvn package -DskipTests          # 打包，跳过测试
 ```
 
-管理端点运行在 **45679** 端口（Prometheus、Health、Info）。日志含 traceId/spanId（Micrometer + Brave）。
+管理端点运行在 **45679**（Prometheus、Health、Info）；日志含 `traceId` / `spanId`（Micrometer + Brave）。
 
-### 模块分层
+### 业务模块
 
-源码包结构 `top.aiolife.<module>`，按业务领域垂直拆分：
+源码包结构为 `top.aiolife.<module>`，按业务领域垂直拆分：
 
 | 模块 | 职责 |
-|---|---|
-| `sso` | 登录认证，Sa-Token JWT + Redis，邮件验证码，用户绑定 |
-| `system` | 系统管理（用户、菜单、字典） |
-| `record` | 核心记录引擎：时迹、目标、待办、理财、荣誉、备忘、消息通知、第三方同步（LeetCode/CSDN/GitHub） |
+| --- | --- |
+| `sso` | Sa-Token JWT + Redis 认证、邮件验证码、用户绑定 |
+| `system` | 用户、菜单、字典 |
+| `record` | 时迹、目标、待办、理财、荣誉、备忘、通知及 LeetCode/CSDN/GitHub 同步 |
 | `wardrobe` | 衣柜管理 |
-| `membership` | 会员维护：会员记录、统计 |
-| `feedback` | 用户反馈：反馈提交、评论、管理端处理 |
-| `relationship` | 人际关系图谱（Neo4j），可通过 `AIO_LIFE_NEO4J_ENABLED` 开关 |
+| `membership` | 会员记录与统计 |
+| `feedback` | 反馈提交、评论和管理端处理 |
+| `relationship` | Neo4j 人际关系图谱，通过 `AIO_LIFE_NEO4J_ENABLED` 开关控制 |
 | `llm` | 历史会话、消息及模型密钥配置管理；不提供大模型调用 |
-| `mcp` | MCP 协议支持（自定义注解驱动的 Tool 注册），含认证层 |
+| `mcp` | 自定义注解驱动的 MCP Tool 注册与认证 |
 
-### 技术要点
+### 数据与配置约束
 
-- MySQL 业务数据访问统一使用 MyBatis-Plus / MyBatis Mapper；禁止生产业务代码使用 `JdbcTemplate`、`NamedParameterJdbcTemplate`、`JdbcClient` 或直接 JDBC，禁止在 Service / Guard 内嵌 SQL。联表、行锁和特殊更新放入 Mapper，具体规则与自动检查见 `aio-life-server/AGENTS.md` 的“数据库访问规范（强制）”。
-- 逻辑删除：MyBatis Plus 全局配置 `is_deleted` 字段
-- 对象映射：MapStruct，Lombok 配合 `lombok-mapstruct-binding`
-- 环境变量：数据库密码、Redis、MinIO、邮件等敏感配置通过 `AIO_LIFE_*` 环境变量注入
-- 邮件验证码有频率限制（单IP/单邮箱/全局，配置在 `aio.life.server.auth.code.*`）
-- 定时任务：`@EnableScheduling`，LeetCode 同步 cron 可配
+- MySQL 业务访问统一使用 MyBatis-Plus / MyBatis Mapper。禁止生产业务代码使用 `JdbcTemplate`、`NamedParameterJdbcTemplate`、`JdbcClient` 或直接 JDBC；禁止在 Service / Guard 内嵌 SQL。联表、行锁、特殊更新放入 Mapper；规则与自动检查见 Server 规范“数据库访问规范（强制）”。
+- 逻辑删除使用全局配置字段 `is_deleted`；对象映射使用 MapStruct，Lombok 配合 `lombok-mapstruct-binding`。
+- 数据库、Redis、MinIO、邮件等敏感配置通过 `AIO_LIFE_*` 环境变量注入。
+- 邮件验证码保留单 IP、单邮箱及全局频率限制，配置前缀为 `aio.life.server.auth.code.*`。
+- 定时任务使用 `@EnableScheduling`，LeetCode 同步 cron 可配置。
