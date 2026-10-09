@@ -47,13 +47,19 @@
 
 业务任务依赖 INV-01 至 INV-03，以及实际需要的 BASE 子项。盘点可与公共组件设计并行；未确定组件接口和文件边界前，不派发相互依赖的页面实现。
 
+## 首页补核查（2026-10-09）
+
+源码补核查发现 HOME-01 的“已完成”遗漏了前台数据定时刷新、普通内容／五张业务卡片顶部空白刷新、普通标题导航、关注待办日期与 GitHub 访问入口。概览点击刷新、微信读书空白刷新、整页下拉、卡片设置与主体编辑分页已经存在。随后已完成上述代码补齐；Mobile 单元、H5 首页专项及微信编译／包体检查通过，微信与 App 真机尚未验收。
+
+HOME-R01 至 HOME-R04、HOME-I01 至 HOME-I03 的工作内容与验收统一见 [首页卡片核查与补齐清单](mobile-migration/home-card-audit.md)，共同需求见 [首页功能说明](首页功能说明.md)。首页主体迁移完成不能代表所有刷新交互已经与 Web 对齐。
+
 ## 业务页面
 
 “待核验”表示已有移动端实现或映射，不代表与 Web 功能对齐。每一行均需满足后文统一验收条件；操作级子清单由 INV-03 补齐后再进入开发。
 
 | 编号 | 菜单或功能 | Web 页面 | 状态 | 负责人 |
 |---|---|---|---|---|
-| HOME-01 | 主页 | dashboard/home/index.vue | 已完成 | 主 Agent |
+| HOME-01 | 主页 | dashboard/home/index.vue | 刷新与操作已补齐；H5专项通过，真机待验 | 主 Agent |
 | HOME-02 | 仪表盘工作台，当前仅映射到移动首页 | dashboard/workspace/index.vue | 已完成 | 主 Agent |
 | TASK-01 | 待办 | task-center/todo/index.vue | 已完成 | /root/mobile_records |
 | TASK-02 | 目标管理 | task-center/goal/index.vue | 已完成 | /root/mobile_records |

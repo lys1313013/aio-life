@@ -9,6 +9,12 @@ AIO Life — All-in-One 人生管理系统，记录、统计、分析个人生�
 - **移动端 aio-life-mobile**：uni-app x Vapor，首版实现账号密码登录与首页，详见[移动端仓库](https://github.com/lys1313013/aio-life-mobile)
 - **查询服务 aio-life-query**：独立 Java 21 + Hasura v3 + MySQL Connector，首期通过 REST / MCP 开放 `time_record` 的授权目录、明细和统计，直接调用原服务校验 Token / API Key；目前为本地独立仓库，运行及权限说明见 `aio-life-query/README.md`，远程仓库尚未创建。
 
+## 首页跨端文档
+
+- [首页卡片功能与交互](docs/首页功能说明.md)：共同卡片目录、配置、刷新与业务操作。
+- [首页卡片核查与补齐清单](docs/mobile-migration/home-card-audit.md)：Web / Mobile 现状、缺项与验收条件。
+- [今日时迹卡片设计](docs/今日时迹卡片设计.md)、[首页新增业务卡片需求](docs/首页新增业务卡片需求.md)。
+
 ## 本地启动
 
 ```bash
