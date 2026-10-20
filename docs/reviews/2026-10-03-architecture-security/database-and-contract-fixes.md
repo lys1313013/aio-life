@@ -2,8 +2,8 @@
 
 - Server 新增固定 Git 基线及 6 份 SQL 的校验和计划，隔离新旧库比较完整结构，验证数据保留与微信/银行卡关键约束。
 - Server PR/发布 CI 新增 MySQL 8.0 升级任务，镜像发布同时依赖业务测试与升级验证；提供只读发布前结构预检，操作与证据归档见 server `docs/数据库升级验证.md`。
-- 主仓库新增 `.github/workflows/api-contracts.yml`，从 `scripts/contract-revisions.json` 读取三仓完整提交 SHA，显式检出后运行现有生成器 `--check`。不依赖 CI 机器预存相邻仓库，也不使用浮动 main 作为契约版本。
-- 三仓联合交付时需把版本锁更新为拟发布的已提交 SHA。主仓契约检查是独立联合验证，不会自动把未提交源码发布，也不能代替各仓 CI。私有子仓库可配置只有所需仓库只读权限的 `CONTRACTS_READ_TOKEN`，公开仓库使用默认 token。
+- 主仓库新增 `.github/workflows/api-contracts.yml`，显式检出三仓后运行现有生成器 `--check`，不依赖 CI 机器预存相邻仓库。2026-10-20 移除手动维护的提交版本锁，改为每次运行检查三仓的 `main` 分支。
+- 主仓契约检查是独立联合验证，不会自动把未提交源码发布，也不能代替各仓 CI。私有子仓库可配置只有所需仓库只读权限的 `CONTRACTS_READ_TOKEN`，公开仓库使用默认 token。
 
 ## 本地证据
 
