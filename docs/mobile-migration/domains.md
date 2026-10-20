@@ -4,7 +4,7 @@
 
 ## 来源与公共约定
 
-参照 Web `api/core/{income,expense,message,mcp,github,csdn,llm,user-bind}.ts`、`api/{bank-card,relationship}/index.ts` 与对应 views；复杂契约核对后端 `IncomeController`、`ExpController`、`LLMController`、各实体/query。收入实际主键为 `id`，兼容旧 Web `incomeId`，所有 ID 保留字符串。GET query 参数平铺；收入与支出无附件。复用 MobilePage/MobileButton/ConfirmAction/FormField/PageState/AdaptiveModal/MetricCard/LoadMore；页面上下拉刷新，局部提交失败保留表单。
+参照 Web `api/core/{income,expense,message,mcp,github,csdn,user-bind}.ts`、`api/{bank-card,relationship}/index.ts` 与对应 views；复杂契约核对后端 `IncomeController`、`ExpController`、各实体/query。收入实际主键为 `id`，兼容旧 Web `incomeId`，所有 ID 保留字符串。GET query 参数平铺；收入与支出无附件。复用 MobilePage/MobileButton/ConfirmAction/FormField/PageState/AdaptiveModal/MetricCard/LoadMore；页面上下拉刷新，局部提交失败保留表单。
 
 `services/domains/session-guard.ts` 在API完成后校验Token；`page-session.ts` 在 onShow 恢复session/登录检查并加载，在 onHide/onUnload 失效请求和清理业务数据。银行卡完整卡号、GitHub Token、聊天内容与账单预览离页清空；页面级请求代次阻止旧结果覆盖新状态。
 
@@ -51,8 +51,6 @@
 
 - [x] 消息列表/未读筛选、单条/全部已读、删除；私聊发送、按会话用户筛选与会话删除；GET `/message/list`、PUT `/message/read/{id}|read-all`、POST `/message`、DELETE `/message/{id}`。
 - [x] 管理员独立频道、用户ID筛选、分页、发送和删除；按 `roles.includes('admin')` 提供入口，后端继续鉴权；`/message/admin/list|send|{id}`。
-- [x] 隐藏AI功能：会话CRUD/标题、历史/清空、发送、Web SSE流式、单条本地隐藏（Web也无单条AI删除API，不能宣称服务端删除）。API `/llm/sessions/{id?}`、`/llm/chat/history?conversationId`、`/llm/chat/stream`。
-- [x] Web与原生统一 `/llm/chat/stream`，原生uni.request enableChunked/onChunkReceived增量UTF8与SSE处理；无分块回调平台解析同次请求完整响应，不重复发消息；错误保留输入、离页abort。
 - [ ] 微信/App真机分块回调、UTF8分块与取消验收；依赖支持request chunk的匹配HBuilderX运行环境。
 - [x] 私聊会话昵称/头像（GET `/user/{id}/basic`）、未读数与切换标读；AI安全Markdown rich-text、外链/复制、滚动到底。Markdown支持标题/强调/代码/列表/引用；表格纯view分块支持表头/对齐/转义竖线/代码/横向scroll-view，不依赖rich-text的table支持。
 

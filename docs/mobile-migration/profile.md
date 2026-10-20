@@ -1,6 +1,6 @@
 # 个人设置、密码库与共享集成
 
-负责人：主 Agent。日期：2026-10-01。此表为源码与本地模拟验证记录，不表示真实后端或真机验收。
+负责人：主 Agent。日期：2026-10-01。此表为源码与本地模拟验证记录，不表示真实后端或真机验收。LLM 配置 API 于 2026-10-20 退役，历史密钥表及数据保留。
 
 | 功能 | Mobile | 已接入操作及接口 |
 |---|---|---|
@@ -8,7 +8,6 @@
 | 菜单显示 | `preferences?section=menus` | 层级隐藏继承、显示开关、保存、确认恢复默认；GET/PUT/DELETE `/menu/preferences`；大整数ID始终字符串 |
 | 菜单锁 | `pages/profile/security` | 菜单树与锁、设置/修改二级密码、邮件验证码找回；`/auth/secondary-password`、`/auth/secondary-lock/menus`、`/auth/reset-secondary-password`；真实业务2001触发居中解锁，成功原请求只重试一次 |
 | API Key | `preferences?section=keys` | 列表掩码、备注、有效期生成、一次性完整密钥复制、确认删除；`/api-key/list`、`generate`、`/{id}`；离页清除生成密钥 |
-| 大模型 | `preferences?section=llm` | 预设与自定义、模型、接口、密钥、新建/编辑/删除/设为默认；`/llm/key`；编辑密钥为空时省略字段保留原值 |
 | 通知 | `pages/profile/notifications` | 业务渠道偏好、飞书配置、启停、接收人、测试与删除；`/notification/preferences`、`/notification/channels/feishu`；隐藏业务偏好随保存保留，凭证留空不覆盖 |
 | 系统 | `preferences?section=system` | 跟随系统/浅色/深色、确认清缓存并返回首页；保留登录与主题 |
 | 密码库 | `pages/vault/index` | 列表/搜索/分类、解锁/手动锁定、详情、加密CRUD、收藏、复制/显示、密码生成器；`/password/list`、`categories`、`/{id}`；离页和切换账号清除内存明文，闲置30分钟锁定 |

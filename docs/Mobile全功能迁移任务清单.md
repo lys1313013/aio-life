@@ -118,7 +118,7 @@ HOME-R01 至 HOME-R04、HOME-I01 至 HOME-I03 的工作内容与验收统一见 
 | ME-04 | 菜单显示 | _core/profile/menu-display-setting.vue | 已完成 | 主 Agent |
 | ME-05 | 菜单锁 | _core/profile/secondary-password-setting.vue | 已完成 | 主 Agent |
 | ME-06 | API Key | _core/profile/api-key-setting.vue | 已完成 | 主 Agent |
-| ME-07 | 大模型配置 | _core/profile/llm-setting.vue | 已完成 | 主 Agent |
+| ME-07 | 大模型配置 | _core/profile/llm-setting.vue | 已移除（后端模块退役，2026-10-20） | 主 Agent |
 | ME-08 | MBTI 测试 | _core/profile/mbti-setting.vue | 已完成 | /root/mobile_foundation |
 | ME-09 | CBTI 测试 | _core/profile/cbti-setting.vue | 已完成 | /root/mobile_foundation |
 | ME-10 | 通知设置 | _core/profile/notification-setting.vue | 已完成 | 主 Agent |

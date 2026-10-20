@@ -131,8 +131,9 @@ mvn package -DskipTests          # 打包，跳过测试
 | `membership` | 会员记录与统计 |
 | `feedback` | 反馈提交、评论和管理端处理 |
 | `relationship` | Neo4j 人际关系图谱，通过 `AIO_LIFE_NEO4J_ENABLED` 开关控制 |
-| `llm` | 历史会话、消息及模型密钥配置管理；不提供大模型调用 |
 | `mcp` | 自定义注解驱动的 MCP Tool 注册与认证 |
+
+LLM 会话、消息和模型密钥业务接口已移除；历史数据库表及数据保留。
 
 ### 数据与配置约束
 

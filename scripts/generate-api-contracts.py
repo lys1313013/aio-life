@@ -220,14 +220,11 @@ if not formatter.exists():
  raise SystemExit('Install frontend dependencies before generating contracts (pnpm install).')
 changed = []
 for dest in [ROOT/'aio-life-front/apps/web-antd/src/api/payload.ts', ROOT/'aio-life-mobile/src/services/api-payload.ts']:
- # Web no longer exposes LLM chat or model settings. Keep its generated contracts
- # aligned with that scope without changing the backend or the mobile contract.
- is_web = dest.is_relative_to(ROOT/'aio-life-front')
- client_models = {name: fields for name, fields in models.items()
-                  if not is_web or not files[name].is_relative_to(base/'llm')}
- client_routes = [route for route in routes if route['model'] in client_models]
- client_queries = {path: fields for path, fields in queries.items()
-                   if not is_web or not path.startswith('/llm/')}
+ # Keep the Web/mobile payload allowlists aligned with the routes still exposed
+ # by the backend; removed modules must not remain in either generated contract.
+ client_models = models
+ client_routes = routes
+ client_queries = queries
  source = render_contracts(client_models, client_routes, client_queries)
  output = subprocess.run([str(formatter), '--parser', 'typescript'], input=source, cwd=ROOT / 'aio-life-front', text=True, check=True, capture_output=True).stdout
  # Use the same formatting rules as checked-in API code without mutating files.
