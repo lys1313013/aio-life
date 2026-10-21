@@ -1,0 +1,30 @@
+-- 设计草案：目标完整结构，仅供评审或全新空表验证；不自动执行。
+-- 实施时同步后端既有全量脚本，不在现有表上直接执行本文件。
+CREATE TABLE `sys_activity_log` (
+    `id` bigint NOT NULL COMMENT '主键ID',
+    `log_type` varchar(16) NOT NULL COMMENT 'OPERATION 操作 / ACCESS 访问',
+    `user_id` bigint DEFAULT NULL COMMENT '操作用户ID',
+    `username` varchar(100) NOT NULL DEFAULT '' COMMENT '用户名',
+    `nickname` varchar(100) NOT NULL DEFAULT '' COMMENT '昵称',
+    `ip_address` varchar(64) NOT NULL DEFAULT '' COMMENT 'IP 地址',
+    `browser` varchar(100) NOT NULL DEFAULT '' COMMENT '浏览器',
+    `function_name` varchar(200) DEFAULT NULL COMMENT '功能名称',
+    `function_item` varchar(100) DEFAULT NULL COMMENT '功能项',
+    `access_type` varchar(32) DEFAULT NULL COMMENT '访问类型',
+    `request_path` varchar(255) DEFAULT NULL COMMENT '接口路由模板，不含查询参数',
+    `request_method` varchar(16) DEFAULT NULL COMMENT 'HTTP方法，历史未采集为NULL',
+    `request_params` json DEFAULT NULL COMMENT '白名单脱敏参数，应用限制32KiB',
+    `request_time` datetime(3) DEFAULT NULL COMMENT '服务端请求接收时间，Asia/Shanghai',
+    `duration_ms` int DEFAULT NULL COMMENT '处理耗时毫秒，非负，0有效，NULL未采集',
+    `server_ip` varchar(64) DEFAULT NULL COMMENT '处理请求的后端实例IPv4或IPv6',
+    `success` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否成功',
+    `create_user` bigint DEFAULT NULL COMMENT '创建人',
+    `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_user` bigint DEFAULT NULL COMMENT '更新人',
+    `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
+    `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '是否删除(0-否,1-是)',
+    PRIMARY KEY (`id`),
+    KEY `idx_activity_type_time` (`log_type`, `is_deleted`, `create_time`, `id`),
+    KEY `idx_activity_type_id` (`log_type`, `is_deleted`, `id`),
+    KEY `idx_activity_type_req_time` (`log_type`, `is_deleted`, `request_time`, `id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='操作和访问日志';
