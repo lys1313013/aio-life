@@ -6,8 +6,20 @@ AIO Life — All-in-One 人生管理系统，记录、统计、分析个人生�
 
 - **前端 aio-life-front**：Vue Vben Admin v5.5.9（Ant Design Vue），pnpm monorepo + Turborepo
 - **后端 aio-life-server**：Spring Boot 3.5.16 + Java 21 + MyBatis Plus + MySQL 8.x + Redis + Sa-Token + MinIO
-- **移动端 aio-life-mobile**：uni-app x Vapor，首版实现账号密码登录与首页，详见[移动端仓库](https://github.com/lys1313013/aio-life-mobile)
+- **移动端 aio-life-mobile**：uni-app x Vapor，提供首页、时迹、全部、我四栏及业务分包，详见[移动端仓库](https://github.com/lys1313013/aio-life-mobile)
 - **查询服务 aio-life-query**：独立 Java 21 + Hasura v3 + MySQL Connector，首期通过 REST / MCP 开放 `time_record` 的授权目录、明细和统计，直接调用原服务校验 Token / API Key；目前为本地独立仓库，运行及权限说明见 `aio-life-query/README.md`，远程仓库尚未创建。
+
+## 功能全景
+
+![AIO Life 功能全景：时间任务、生活记录、财务管理、物品订阅、成长沉淀与连接管理](docs/architecture/feature-overview.png)
+
+## 系统架构
+
+
+
+
+
+![AIO Life 系统架构：Web、Mobile 和 MCP 客户端连接统一业务后端及数据存储](docs/architecture/system-architecture.png)
 
 ## 首页跨端文档
 
