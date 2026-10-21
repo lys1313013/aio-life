@@ -135,7 +135,7 @@ for p in sorted(base.rglob('*Controller.java')):
    if q:keys+=['page','pageSize']+names(q[1].split('.')[-1]);continue
    typed=re.search(r'(?:\b|\.)(\w+Query)\s+\w+\s*$',param)
    if typed:keys+=names(typed[1]);continue
-   primitive=re.search(r'\b(?:(?:String|int|Integer|Long|long|Boolean|boolean)|(?:List|Set)<\s*(?:String|Integer|Long|Boolean)\s*>)\s+(\w+)\s*$',param)
+   primitive=re.search(r'\b(?:(?:String|int|Integer|Long|long|Boolean|boolean|double|Double|float|Float|BigDecimal)|(?:List|Set)<\s*(?:String|Integer|Long|Boolean)\s*>)\s+(\w+)\s*$',param)
    if primitive:
     alias=re.search(r'@RequestParam\((?:value\s*=\s*)?"([^"]+)"',param)
     keys.append(alias[1] if alias else primitive[1])
