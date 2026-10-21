@@ -137,6 +137,7 @@ LLM 会话、消息和模型密钥业务接口已移除；历史数据库表及�
 
 ### 数据与配置约束
 
+- SQL 脚本遵循 [SQL 脚本规范](aio-life-server/docs/SQL脚本规范.md)：表及每个字段必须有中文 `COMMENT`，包括 ID、版本、审计和逻辑删除字段；索引、约束及迁移执行条件必须说明。
 - MySQL 业务访问统一使用 MyBatis-Plus / MyBatis Mapper。禁止生产业务代码使用 `JdbcTemplate`、`NamedParameterJdbcTemplate`、`JdbcClient` 或直接 JDBC；禁止在 Service / Guard 内嵌 SQL。联表、行锁、特殊更新放入 Mapper；规则与自动检查见 Server 规范“数据库访问规范（强制）”。
 - 逻辑删除使用全局配置字段 `is_deleted`；对象映射使用 MapStruct，Lombok 配合 `lombok-mapstruct-binding`。
 - 数据库、Redis、MinIO、邮件等敏感配置通过 `AIO_LIFE_*` 环境变量注入。
