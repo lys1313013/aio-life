@@ -16,7 +16,7 @@
 
 ## 兼容性及安全状态
 
-- 密码库派生与 Web 既有格式兼容：PBKDF2 SHA256、100000 轮、16字节、32字节salt；SM4通过同一gm-crypto库和参数读写。库对模式参数的实际行为依赖原格式，不能把参数文字 `GCM` 当作已提供认证加密的证明，本次未迁移既有密文格式。
+- 密码库派生与 Web 既有格式兼容：PBKDF2 SHA256、100000 轮、16字节、32字节salt；SM4通过同一gm-crypto库和参数读写。当前实际模式为 ECB：`gm-crypto@0.1.12` 将字符串 `GCM` 回退为 ECB，忽略 IV，不提供认证标签或篡改检测。本次仅更正文档声明，保留现有加解密代码与密文格式，不执行算法切换或数据迁移。
 - Web Crypto和微信安全随机数用于新salt和密码生成；缺少安全随机数的平台明确拒绝生成，不降级为Math.random。已补Android SecureRandom与iOS SecRandomCopyBytes的UTS桥接源码；仍须匹配HBuilderX验证App联编和真机。
 - 菜单锁只在服务端返回2001、且账号未切换时恢复同一请求；普通网络失败不会自动重发写操作。
 - 附件使用Authorization header，保留已绑定ID；Web/微信分别选择文档，App文档选择器尚未接入。图片选择各端使用uni.chooseImage。选择器返回前切换账号会拒绝上传。
