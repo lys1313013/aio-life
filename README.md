@@ -15,11 +15,7 @@ AIO Life — All-in-One 人生管理系统，记录、统计、分析个人生�
 
 ## 系统架构
 
-
-
-
-
-![AIO Life 系统架构：Web、Mobile 和 MCP 客户端连接统一业务后端及数据存储](docs/architecture/system-architecture.png)
+![系统架构：Web、Mobile、浏览器插件与 MCP 客户端连接统一业务后端、数据存储、第三方数据来源及通知渠道](docs/architecture/system-architecture.png)
 
 ## 首页跨端文档
 
