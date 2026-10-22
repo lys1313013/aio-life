@@ -15,7 +15,7 @@ AIO Life — All-in-One 人生管理系统。本仓库保存项目文档、编�
 | 路径 | 职责与技术 | 详细规范 |
 | --- | --- | --- |
 | `aio-life-front/` | Web：Vue Vben Admin v5.5.9、Ant Design Vue、pnpm monorepo、Turborepo | [Web AGENTS.md](aio-life-front/AGENTS.md) |
-| `aio-life-server/` | 后端：Spring Boot 3.5.16、Java 21、MyBatis Plus、MySQL 8.x、Redis、Sa-Token、MinIO | [Server AGENTS.md](aio-life-server/AGENTS.md) |
+| `aio-life-server/` | 后端：Spring Boot 3.5.16、Java 21、MyBatis Plus、MySQL（117 库为 5.7.44）、Redis、Sa-Token、MinIO | [Server AGENTS.md](aio-life-server/AGENTS.md) |
 | `aio-life-mobile/` | 移动端：uni-app x Vapor，入口 `src/main.ts`，`.uvue` 页面与组合式 API | [Mobile AGENTS.md](aio-life-mobile/AGENTS.md) |
 | `docs/` | 需求与技术方案 | 数据库表结构见 [数据库表结构.md](aio-life-server/docs/数据库表结构.md) |
 
