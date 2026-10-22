@@ -34,6 +34,9 @@ AIO Life — All-in-One 人生管理系统。本仓库保存项目文档、编�
 - ID 全程使用 **string**，包括接口、路由、表单、组件 key、比较与提交；禁止转为数字，避免大整数精度丢失。
 - 后端未覆盖序列化器的 `Long/long` 响应字段默认输出字符串；`Integer/int` 输出数字。`PageResp.total` 使用字段级 `CountSerializer`，返回 `number | null`，不能仅凭字段名推断类型。
 - 前端类型按实际 JSON 声明。旧版字符串计数在读取边界解析，不能用真假值判断数量；TypeScript 类型断言不会转换运行时值。细节见 Web 规范“Long 响应与数值判断”。
+- 分页新请求统一使用 `page/pageSize`，页码从 1 开始，公共每页上限 200；业务接口可采用更小上限。旧 `current/size/get` 仅用于服务端兼容，客户端不得继续发送；需要完整列表时逐页获取，不能用超大页大小绕过分页。
+- 本地日期使用 `yyyy-MM-dd`，本地日期时间使用 `yyyy-MM-dd HH:mm:ss`；时迹的 `startTime/endTime` 仍为当天分钟数。请求必填、可空和范围限制以服务端 DTO 的有效校验为准，路径 ID 必须显式必填。完整约定见 [API 参数规范](docs/API参数规范.md)。
+- 请求 DTO 调整后运行 `python3 scripts/generate-api-contracts.py` 同步 Web、移动端类型与字段白名单，再运行 `python3 scripts/generate-api-contracts.py --check`；禁止手改生成文件。
 
 ## Web 与移动端共同 UI 规范
 
