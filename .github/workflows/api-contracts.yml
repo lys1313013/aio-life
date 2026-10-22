@@ -45,7 +45,7 @@ jobs:
           token: ${{ secrets.CONTRACTS_READ_TOKEN || github.token }}
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "22.23.4"
       - uses: pnpm/action-setup@v4
         with:
           package_json_file: aio-life-front/package.json
