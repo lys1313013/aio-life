@@ -1,4 +1,4 @@
-name: Cross-repository API contracts
+name: Synchronize cross-repository API contracts
 
 on:
   push:
@@ -6,43 +6,67 @@ on:
     paths:
       [
         "scripts/generate-api-contracts.py",
+        "scripts/sync-api-contracts.py",
         ".github/workflows/api-contracts.yml",
       ]
   pull_request:
     paths:
       [
         "scripts/generate-api-contracts.py",
+        "scripts/sync-api-contracts.py",
         ".github/workflows/api-contracts.yml",
       ]
   workflow_dispatch:
+  workflow_call:
+    secrets:
+      CONTRACTS_FRONT_SSH_KEY:
+        required: true
+      CONTRACTS_MOBILE_SSH_KEY:
+        required: true
 
 permissions:
   contents: read
+
+# Finish both client pushes before another synchronization starts.
+concurrency:
+  group: api-contracts-${{ github.event_name == 'pull_request' && github.ref || 'main' }}
+  cancel-in-progress: false
 
 jobs:
   contracts:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
+      - name: Checkout contract generator
+        uses: actions/checkout@v6
+        with:
+          repository: lys1313013/aio-life
+          ref: ${{ github.repository == 'lys1313013/aio-life' && github.sha || 'main' }}
+      - name: Check synchronization credentials
+        if: github.event_name != 'pull_request'
+        env:
+          FRONT_KEY: ${{ secrets.CONTRACTS_FRONT_SSH_KEY }}
+          MOBILE_KEY: ${{ secrets.CONTRACTS_MOBILE_SSH_KEY }}
+        run: |
+          test -n "$FRONT_KEY" || { echo "::error::Missing CONTRACTS_FRONT_SSH_KEY"; exit 1; }
+          test -n "$MOBILE_KEY" || { echo "::error::Missing CONTRACTS_MOBILE_SSH_KEY"; exit 1; }
+      - uses: actions/checkout@v6
         with:
           repository: lys1313013/aio-life-server
           ref: main
           path: aio-life-server
-          token: ${{ secrets.CONTRACTS_READ_TOKEN || github.token }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           repository: lys1313013/aio-life-front
           ref: main
           path: aio-life-front
-          token: ${{ secrets.CONTRACTS_READ_TOKEN || github.token }}
-      - uses: actions/checkout@v4
+          ssh-key: ${{ github.event_name != 'pull_request' && secrets.CONTRACTS_FRONT_SSH_KEY || '' }}
+      - uses: actions/checkout@v6
         with:
           repository: lys1313013/aio-life-mobile
           ref: main
           path: aio-life-mobile
-          token: ${{ secrets.CONTRACTS_READ_TOKEN || github.token }}
+          ssh-key: ${{ github.event_name != 'pull_request' && secrets.CONTRACTS_MOBILE_SSH_KEY || '' }}
       - uses: actions/setup-node@v4
         with:
           node-version: "22.23.4"
@@ -61,9 +85,15 @@ jobs:
           path: ${{ steps.pnpm-store.outputs.path }}
           key: ${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.pnpm-store.outputs.version }}-${{ hashFiles('aio-life-front/pnpm-lock.yaml') }}
       - name: Install locked formatter and linter
+        if: github.event_name == 'pull_request'
         working-directory: aio-life-front
         env:
+          HUSKY: "0"
           LEFTHOOK: "0"
         run: pnpm install --frozen-lockfile
-      - name: Check both clients against the server
+      - name: Generate and push both client contracts
+        id: sync
+        if: github.event_name != 'pull_request'
+        run: python3 scripts/sync-api-contracts.py
+      - name: Check contracts after both client pushes
         run: python3 scripts/generate-api-contracts.py --check
