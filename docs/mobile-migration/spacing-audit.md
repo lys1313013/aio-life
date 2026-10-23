@@ -36,9 +36,9 @@
 
 ## 本轮证据
 
-- [目标与待办分组报告](./spacing-06.md)
+- [目标与待办分组报告](../../aio-life-mobile/docs/mobile-migration/spacing-06.md)
 - [记录类分组报告](./spacing-07.md)
-- [物品与会员分组报告](./spacing-08.md)
+- [物品与会员分组报告](../../aio-life-mobile/docs/mobile-migration/spacing-08.md)
 - [财务分组报告](./spacing-09.md)
 - [编程与社交分组报告](./spacing-10.md)
 - [设置管理认证人格分组报告](./spacing-11.md)

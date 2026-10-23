@@ -1,13 +1,71 @@
-# aio-life
+# AIO Life
 
-AIO Life — All-in-One 人生管理系统，记录、统计、分析个人生活数据。本仓库保存项目文档、编排配置和开发入口；Web、后端和移动端使用独立 Git 仓库维护。
+All-in-One 人生管理系统，记录、统计、分析个人生活数据。本仓库维护跨端需求、技术方案、编排配置和开发脚本；各客户端与服务使用独立 Git 仓库。
 
-## 技术栈
+## 仓库与文档
 
-- **前端 aio-life-front**：Vue Vben Admin v5.5.9（Ant Design Vue），pnpm monorepo + Turborepo
-- **后端 aio-life-server**：Spring Boot 3.5.16 + Java 21 + MyBatis Plus + MySQL（117 库为 5.7.44）+ Redis + Sa-Token + MinIO
-- **移动端 aio-life-mobile**：uni-app x Vapor，提供首页、时迹、全部、我四栏及业务分包，详见[移动端仓库](https://github.com/lys1313013/aio-life-mobile)
-- **查询服务 aio-life-query**：独立 Java 21 + Hasura v3 + MySQL Connector，首期通过 REST / MCP 开放 `time_record` 的授权目录、明细和统计，直接调用原服务校验 Token / API Key；目前为本地独立仓库，运行及权限说明见 `aio-life-query/README.md`，远程仓库尚未创建。
+| 仓库 | 职责 | 开发入口 |
+| --- | --- | --- |
+| [aio-life-front](https://github.com/lys1313013/aio-life-front) | Vue Vben Admin 5.5.9、Ant Design Vue、pnpm monorepo | [README](https://github.com/lys1313013/aio-life-front/blob/main/README.md)、[开发规范](https://github.com/lys1313013/aio-life-front/blob/main/AGENTS.md) |
+| [aio-life-server](https://github.com/lys1313013/aio-life-server) | Spring Boot 3.5.16、Java 21、MyBatis-Plus、MySQL、Redis、MinIO | [README](https://github.com/lys1313013/aio-life-server/blob/main/README.md)、[开发规范](https://github.com/lys1313013/aio-life-server/blob/main/AGENTS.md) |
+| [aio-life-mobile](https://github.com/lys1313013/aio-life-mobile) | uni-app x Vapor，H5、微信小程序与 App | [README](https://github.com/lys1313013/aio-life-mobile/blob/main/README.md)、[开发规范](https://github.com/lys1313013/aio-life-mobile/blob/main/AGENTS.md) |
+| [aio-life-query](https://github.com/lys1313013/aio-life-query) | Java 21、Hasura v3、MySQL Connector，只读查询 | [README](https://github.com/lys1313013/aio-life-query/blob/main/README.md) |
+| [aio-life-chrome-plugin](https://github.com/lys1313013/aio-life-chrome-plugin) | B 站进度、豆瓣书影与购物页面采集 | [README](https://github.com/lys1313013/aio-life-chrome-plugin/blob/main/README.md) |
+
+查找需求、API 契约、上线步骤与历史验收，先看[文档目录](docs/README.md)。跨仓库约定见 [AGENTS.md](AGENTS.md)。表结构、迁移兼容性及配置默认值分别以后端 SQL、升级计划和 `application.yml` 为准。
+
+## 初始化与启动
+
+```bash
+git clone https://github.com/lys1313013/aio-life.git
+cd aio-life
+./scripts/setup-repositories.sh
+```
+
+脚本通过 SSH 克隆 Web、后端和移动端，需要可用的 GitHub SSH 授权。查询服务与浏览器插件按上表单独克隆到同名目录；初始化和更新脚本不包含它们。主仓库不跟踪子仓库文件或提交指针。
+
+先按[后端 README](https://github.com/lys1313013/aio-life-server/blob/main/README.md)准备数据库、Redis、环境变量及业务库结构，再在独立终端分别启动。以下命令均从主仓库目录开始执行：
+
+```bash
+# 后端：API 45678，context-path /api；管理端点 45679
+cd aio-life-server
+mvn spring-boot:run
+```
+
+```bash
+# Web：使用仓库固定的 pnpm 10.22.0，Node 版本见 Web README
+cd aio-life-front
+corepack enable
+pnpm install --frozen-lockfile
+pnpm run dev:antd
+```
+
+```bash
+# 移动端 H5：5180，默认代理本地后端 45678
+cd aio-life-mobile
+npm ci
+# 仅首次创建；已有 .env.local 时保留原配置
+cp .env.example .env.local
+npm run dev
+```
+
+敏感配置通过 `AIO_LIFE_*` 环境变量注入。Maven 不自动加载 `.env`；移动端 `VITE_*` 配置会进入客户端包，不能存放密钥。微信上传、App 工具链及平台验证见各端 README。
+
+## 更新与交付
+
+```bash
+./scripts/pull-latest-main.sh
+```
+
+此入口只更新三个业务子仓库，要求它们处于 `main` 且工作区干净，使用 `git pull --ff-only`。主仓库自身、查询服务和插件需在各自仓库更新；不要为拉取代码丢弃未提交修改。
+
+先在所属仓库审查并提交改动，再从主仓库执行：
+
+```bash
+python3 scripts/push-repositories.py
+```
+
+入口先生成并自动提交 Web、移动端契约，再推送后端、Web、移动端及主仓库；全部成功后检查契约并触发只读联合 CI。需要 Web 依赖、Git 授权和已登录的 GitHub CLI，不会自动提交业务修改，也不处理查询服务或插件。明确跳过 Git hooks 时使用 `--skip-hooks`，详见[统一推送前提与失败恢复](docs/API参数规范.md#本地统一推送与联合检查)。纯文档改动检查差异和引用，无需业务构建。
 
 ## 功能全景
 
@@ -17,62 +75,17 @@ AIO Life — All-in-One 人生管理系统，记录、统计、分析个人生�
 
 ![系统架构：Web、Mobile、浏览器插件与 MCP 客户端连接统一业务后端、数据存储、第三方数据来源及通知渠道](docs/architecture/system-architecture.png)
 
-## 首页跨端文档
-
-- [首页卡片功能与交互](docs/首页功能说明.md)：共同卡片目录、配置、刷新与业务操作。
-- [首页卡片核查与补齐清单](docs/mobile-migration/home-card-audit.md)：Web / Mobile 现状、缺项与验收条件。
-- [今日时迹卡片设计](docs/今日时迹卡片设计.md)、[首页新增业务卡片需求](docs/首页新增业务卡片需求.md)。
-
-## 本地启动
-
-```bash
-# 前端（web-antd 开发服务器）
-cd aio-life-front && pnpm run dev
-
-# 后端（端口 45678，context-path /api；管理端点 45679）
-cd aio-life-server && mvn spring-boot:run
-
-# 移动客户端 Web 预览（端口 5180，代理后端 45678）
-cd aio-life-mobile && npm ci && npm run dev
-```
-
-数据库、Redis、MinIO、邮件等敏感配置通过 `AIO_LIFE_*` 环境变量注入。全量表结构见 `aio-life-server/docs/数据库表结构.md`。
-
-## 初始化
-
-```bash
-git clone https://github.com/lys1313013/aio-life.git
-cd aio-life
-./scripts/setup-repositories.sh
-```
-
-初始化脚本会将 Web、后端和移动端仓库克隆到本仓库目录下，但主仓库不会跟踪它们的提交指针。
-
-## 更新代码仓库
-
-```bash
-./scripts/pull-latest-main.sh
-```
-
-更新脚本只允许在对应仓库工作区干净且位于 `main` 分支时执行，使用 fast-forward 拉取，避免覆盖本地修改或意外合并。
-
-## 统一推送
-
-先在各仓库提交需要交付的业务修改，再执行：
-
-```bash
-python3 scripts/push-repositories.py
-```
-
-入口先生成并自动提交 Web、移动端契约文件，再推送后端、Web、移动端及主仓库，全部推送成功后执行契约检查并触发只读 CI。需要 Web 依赖、本机 Git 授权和已登录的 GitHub CLI；不会自动提交业务修改。明确要求跳过 Git hooks 时加 `--skip-hooks`。详见 [本地统一推送与联合检查](docs/API参数规范.md#本地统一推送与联合检查)。
+查询服务目前开放时迹、运动、阅读、影视、视频、演出六个数据集，提供 REST、GraphQL HTTP 和 MCP，支持时迹分类关系；通过原后端校验 Token／API Key。具体范围及部署限制见[查询服务说明](https://github.com/lys1313013/aio-life-query/blob/main/README.md)，图示不代表目标环境已部署全部可选服务。
 
 ## 目录结构
 
-```
+```text
 aio-life/
-├── aio-life-front/    # 独立前端仓库（本仓库不跟踪）
-├── aio-life-server/   # 独立后端仓库（本仓库不跟踪）
-├── aio-life-mobile/   # 独立 uni-app x Vapor 仓库（本仓库不跟踪）
-├── docs/              # 需求与技术方案
-└── scripts/           # 独立仓库初始化与更新脚本
+├── aio-life-front/          # 独立 Web 仓库
+├── aio-life-server/         # 独立后端仓库
+├── aio-life-mobile/         # 独立移动端仓库
+├── aio-life-query/          # 可选只读查询服务，单独克隆
+├── aio-life-chrome-plugin/  # 可选浏览器插件，单独克隆
+├── docs/                   # 跨端需求、方案与历史记录
+└── scripts/                # 初始化、更新、契约生成与统一推送
 ```
