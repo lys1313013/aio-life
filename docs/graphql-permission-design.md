@@ -1,5 +1,7 @@
 # GraphQL 引入方案（aio-life）
 
+> 历史评估：本文讨论单体看板的 GraphQL／聚合 DSL 选型，包含尚未落地的方案与估算。当前独立 Hasura 只读服务已使用另一套架构，见[Query README](../aio-life-query/README.md)。不要按本文的端点、内省或 persisted query 设想配置现有查询服务。
+
 > 本文件用于在 aio-life 项目中评估并落地 GraphQL，重点回答：要不要做、怎么和现有栈（Spring Boot 3 + MyBatis-Plus + Sa-Token + vben-admin）适配、如何渐进式迁移。
 
 ---
