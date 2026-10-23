@@ -1,72 +1,66 @@
-name: Synchronize cross-repository API contracts
+name: Cross-repository API contracts
 
+# The local unified delivery entry dispatches this only after all pushes finish.
 on:
-  push:
-    branches: [main]
-    paths:
-      [
-        "scripts/generate-api-contracts.py",
-        "scripts/sync-api-contracts.py",
-        ".github/workflows/api-contracts.yml",
-      ]
-  pull_request:
-    paths:
-      [
-        "scripts/generate-api-contracts.py",
-        "scripts/sync-api-contracts.py",
-        ".github/workflows/api-contracts.yml",
-      ]
   workflow_dispatch:
-  workflow_call:
-    secrets:
-      CONTRACTS_FRONT_SSH_KEY:
+    inputs:
+      generator_sha:
+        description: Main repository commit containing the generator
         required: true
-      CONTRACTS_MOBILE_SSH_KEY:
+        type: string
+      server_sha:
+        description: Pushed backend commit
         required: true
+        type: string
+      front_sha:
+        description: Pushed Web commit
+        required: true
+        type: string
+      mobile_sha:
+        description: Pushed mobile commit
+        required: true
+        type: string
 
 permissions:
   contents: read
-
-# Finish both client pushes before another synchronization starts.
-concurrency:
-  group: api-contracts-${{ github.event_name == 'pull_request' && github.ref || 'main' }}
-  cancel-in-progress: false
 
 jobs:
   contracts:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout contract generator
-        uses: actions/checkout@v6
-        with:
-          repository: lys1313013/aio-life
-          ref: ${{ github.repository == 'lys1313013/aio-life' && github.sha || 'main' }}
-      - name: Check synchronization credentials
-        if: github.event_name != 'pull_request'
+      - name: Require immutable commit references
         env:
-          FRONT_KEY: ${{ secrets.CONTRACTS_FRONT_SSH_KEY }}
-          MOBILE_KEY: ${{ secrets.CONTRACTS_MOBILE_SSH_KEY }}
+          GENERATOR_SHA: ${{ inputs.generator_sha }}
+          SERVER_SHA: ${{ inputs.server_sha }}
+          FRONT_SHA: ${{ inputs.front_sha }}
+          MOBILE_SHA: ${{ inputs.mobile_sha }}
         run: |
-          test -n "$FRONT_KEY" || { echo "::error::Missing CONTRACTS_FRONT_SSH_KEY"; exit 1; }
-          test -n "$MOBILE_KEY" || { echo "::error::Missing CONTRACTS_MOBILE_SSH_KEY"; exit 1; }
+          for sha in "$GENERATOR_SHA" "$SERVER_SHA" "$FRONT_SHA" "$MOBILE_SHA"; do
+            [[ "$sha" =~ ^[a-f0-9]{40}$ ]] || { echo "::error::Full commit SHAs are required"; exit 1; }
+          done
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.generator_sha }}
+          persist-credentials: false
       - uses: actions/checkout@v6
         with:
           repository: lys1313013/aio-life-server
-          ref: main
+          ref: ${{ inputs.server_sha }}
           path: aio-life-server
+          persist-credentials: false
       - uses: actions/checkout@v6
         with:
           repository: lys1313013/aio-life-front
-          ref: main
+          ref: ${{ inputs.front_sha }}
           path: aio-life-front
-          ssh-key: ${{ github.event_name != 'pull_request' && secrets.CONTRACTS_FRONT_SSH_KEY || '' }}
+          persist-credentials: false
       - uses: actions/checkout@v6
         with:
           repository: lys1313013/aio-life-mobile
-          ref: main
+          ref: ${{ inputs.mobile_sha }}
           path: aio-life-mobile
-          ssh-key: ${{ github.event_name != 'pull_request' && secrets.CONTRACTS_MOBILE_SSH_KEY || '' }}
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: "22.23.4"
@@ -85,15 +79,19 @@ jobs:
           path: ${{ steps.pnpm-store.outputs.path }}
           key: ${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.pnpm-store.outputs.version }}-${{ hashFiles('aio-life-front/pnpm-lock.yaml') }}
       - name: Install locked formatter and linter
-        if: github.event_name == 'pull_request'
         working-directory: aio-life-front
         env:
           HUSKY: "0"
           LEFTHOOK: "0"
         run: pnpm install --frozen-lockfile
-      - name: Generate and push both client contracts
-        id: sync
-        if: github.event_name != 'pull_request'
-        run: python3 scripts/sync-api-contracts.py
-      - name: Check contracts after both client pushes
+      - name: Check published contracts
         run: python3 scripts/generate-api-contracts.py --check
+      - name: Record checked commits
+        if: always()
+        env:
+          GENERATOR_SHA: ${{ inputs.generator_sha }}
+          SERVER_SHA: ${{ inputs.server_sha }}
+          FRONT_SHA: ${{ inputs.front_sha }}
+          MOBILE_SHA: ${{ inputs.mobile_sha }}
+        run: |
+          printf '| Repository | Commit |\n| --- | --- |\n| generator | %s |\n| server | %s |\n| front | %s |\n| mobile | %s |\n' "$GENERATOR_SHA" "$SERVER_SHA" "$FRONT_SHA" "$MOBILE_SHA" >> "$GITHUB_STEP_SUMMARY"

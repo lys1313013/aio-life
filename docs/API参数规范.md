@@ -44,11 +44,18 @@ python3 -m unittest discover -s scripts -p 'test_api_contracts.py'
 
 生成的类型不替代后端运行时校验，字段白名单也不执行数值转换。动态 JSON 接口保留其专有校验，不生成空 DTO 丢弃输入。
 
-### 自动同步与联合检查
+### 本地统一推送与联合检查
 
-- 后端 `main` 的 Java 源码变化会触发 `Synchronize API contracts`，调用主仓库的共享工作流；生成器或同步流程本身修改也会触发同步。无契约差异时不会创建空提交。
-- 工作流读取后端与两个客户端的远端 `main`，自动生成 Web `apps/web-antd/src/api/payload.ts` 和 Mobile `src/services/api-payload.ts`，分别提交并推送。只有两个客户端都推送成功且三个仓库版本核对完成，才执行 `--check`。
-- 并发推送导致版本变化或普通推送被拒绝时，重新读取并生成，最多尝试四次；不强推、不覆盖业务文件。运行摘要记录生成器和三个仓库实际检查的 commit，避免把重跑读取的新版本误认为原版本。
-- 主仓库 PR 保持只读检查，不接收写入密钥；自动同步只在可信 `main` 推送或手动触发时执行。自动提交仅发生在两个客户端，不会再次触发后端同步入口。
-- 两个客户端分别配置可写 deploy key；私钥以 `CONTRACTS_FRONT_SSH_KEY`、`CONTRACTS_MOBILE_SSH_KEY` 保存在主仓库及后端仓库的 Actions secrets。密钥仅用于相应客户端 Git 访问，不使用个人 Token；私钥不得写入仓库。首次启用或轮换密钥需同步更新这两个调用仓库的 secrets。
-- 自动同步只保证生成契约与所记录后端版本一致，不替代客户端业务适配、各端 CI 或生产部署。其他源码仍按原有多仓库流程提交。
+先在对应仓库审查并提交业务修改，再在主仓库执行：
+
+```bash
+python3 scripts/push-repositories.py
+# 明确要求跳过 Git hooks 时使用；脚本本身不运行业务测试或构建。
+python3 scripts/push-repositories.py --skip-hooks
+```
+
+- 入口要求三个业务仓库位于 `main` 且工作区干净，主仓库的生成器、推送入口和工作流修改也必须先提交。已有未提交修改会保留，不自动暂存、清理或提交业务文件。
+- 使用 `git pull --ff-only` 更新仓库，然后生成 Web `apps/web-antd/src/api/payload.ts` 和 Mobile `src/services/api-payload.ts`；只自动提交这两个生成文件，没有差异时不创建提交。需要预先安装 Web 依赖及 GitHub CLI，并完成本机 Git、`gh` 登录。
+- 推送后端、Web、移动端和主仓库，确认远端 `main` 与本次提交一致后，才执行本地 `--check` 并触发只读 CI。任一推送失败或远端版本改变都会停止，不强推、不回滚已推送提交；处理后可重跑入口。
+- CI 仅通过 `workflow_dispatch` 接收本次四个完整 commit SHA，按固定版本检出并检查，运行摘要保留版本记录；不会在各仓库尚未推送完成时抢先检查，也不会因为重跑而改读最新 `main`。
+- 云端只使用 `contents: read` 的内置 Token，不生成提交、不推送代码、不需要跨仓库写入密钥。联合检查仅证明生成契约一致，不替代各端业务验证或部署。

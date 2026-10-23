@@ -37,6 +37,7 @@ AIO Life — All-in-One 人生管理系统。本仓库保存项目文档、编�
 - 分页新请求统一使用 `page/pageSize`，页码从 1 开始，公共每页上限 200；业务接口可采用更小上限。旧 `current/size/get` 仅用于服务端兼容，客户端不得继续发送；需要完整列表时逐页获取，不能用超大页大小绕过分页。
 - 本地日期使用 `yyyy-MM-dd`，本地日期时间使用 `yyyy-MM-dd HH:mm:ss`；时迹的 `startTime/endTime` 仍为当天分钟数。请求必填、可空和范围限制以服务端 DTO 的有效校验为准，路径 ID 必须显式必填。完整约定见 [API 参数规范](docs/API参数规范.md)。
 - 请求 DTO 调整后运行 `python3 scripts/generate-api-contracts.py` 同步 Web、移动端类型与字段白名单，再运行 `python3 scripts/generate-api-contracts.py --check`；禁止手改生成文件。
+- 多仓库交付先在各仓库提交业务改动，再使用 `python3 scripts/push-repositories.py`：推送前自动生成并提交两端契约，所有仓库推送成功后才执行联合检查。不得以分别手动推送代替统一入口而漏同步；用户明确不测试时使用 `--skip-hooks`。入口不自动提交业务文件，前置条件和恢复方式见 [本地统一推送与联合检查](docs/API参数规范.md#本地统一推送与联合检查)。
 
 ## Web 与移动端共同 UI 规范
 

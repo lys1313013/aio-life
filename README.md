@@ -56,6 +56,16 @@ cd aio-life
 
 更新脚本只允许在对应仓库工作区干净且位于 `main` 分支时执行，使用 fast-forward 拉取，避免覆盖本地修改或意外合并。
 
+## 统一推送
+
+先在各仓库提交需要交付的业务修改，再执行：
+
+```bash
+python3 scripts/push-repositories.py
+```
+
+入口先生成并自动提交 Web、移动端契约文件，再推送后端、Web、移动端及主仓库，全部推送成功后执行契约检查并触发只读 CI。需要 Web 依赖、本机 Git 授权和已登录的 GitHub CLI；不会自动提交业务修改。明确要求跳过 Git hooks 时加 `--skip-hooks`。详见 [本地统一推送与联合检查](docs/API参数规范.md#本地统一推送与联合检查)。
+
 ## 目录结构
 
 ```
