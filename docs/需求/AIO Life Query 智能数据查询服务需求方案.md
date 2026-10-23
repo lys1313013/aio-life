@@ -1,10 +1,20 @@
 # AIO Life Query 智能数据查询服务需求方案
 
-版本：v0.4 直接 Token 校验与 MCP；日期：2026-10-05；状态：`time_record` 单表实现及本地验证，未生产部署。
+设计版本：v0.4（2026-10-05）；实现摘要核对：2026-10-23。下文保留原始目标设计，实际接口与限制以[Query README](../../aio-life-query/README.md)为准；本次没有验证生产部署。
 
 已确认：Java、独立部署、AI 结构发现与查询、权限隔离、引入 Hasura、直接调用 AIO Life 校验 Token / API Key、MCP 接入。本文其余范围与额度为设计建议。
 
-首期实现位于本地独立仓库 `aio-life-query/`，配套授权代码位于 `aio-life-server` 的 `sso.query`。运行方式、真实限制和验收记录以 `aio-life-query/README.md` 为准。以下章节保留完整目标设计；首期已实现 REST、MCP、直接凭据校验和单表明细/统计；尚未实现逐应用长期授权、授权管理 UI、取消接口及多表关系。当前固定为 `aio-life-query` / `time.read`，通过功能开关、现有凭据与二级锁放行；以下涉及用户授予独立应用 scopes 的内容属于后续目标，不是当前已经存在的权限事实。网关采用更小的 GraphQL 子集：单根字段，拒绝片段与指令，统计也限制 93 天；审计使用独立持久卷，无业务库新增表。
+实现位于独立 [aio-life-query](https://github.com/lys1313013/aio-life-query) 仓库，配套授权代码位于后端 `sso.query`。当前与原始设计的主要差异如下，后续章节中的单表范围、93 天和逐应用 scopes 不能直接作为现行接口契约：
+
+| 主题 | 当前实现 |
+| --- | --- |
+| 入口与数据 | REST、GraphQL HTTP、MCP；时迹、运动、阅读、影视、视频、演出六个数据集 |
+| 关系 | 仅开放时迹 `category`，不提供任意跨表／跨数据集查询 |
+| 日期窗口 | 明细与统计最长 366 天；行数、offset 等按网关固定限制 |
+| 身份与权限 | 固定应用 `aio-life-query`，复用现有 Token／API Key、功能开关及菜单二级锁，按数据集返回角色和 scope |
+| 执行鉴权 | 入口校验后签发一次性票据，Webhook 消费票据；不在同一执行链重复远程校验原 Token |
+| 尚未提供 | 逐应用长期授权、授权管理 UI、取消接口、任意关系查询 |
+| 审计 | 独立持久卷，不新增业务审计表 |
 
 **结论：采用 `aio-life-query` Java 网关 + Hasura 查询引擎 + MySQL Connector。AI 读取授权后的业务模型并提交 GraphQL；用户身份、应用授权、二级锁由 AIO Life 判定，行列权限由 Hasura 在查询计划中落实。**
 

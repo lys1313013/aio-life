@@ -1,6 +1,6 @@
 # 时迹分类预测与 Jev 接入方案
 
-状态：Jev 业务接入尚未实现；方案和测试探针已改用 IWorkCalendarService；旧星期方案完成过 6 组真实 Jev 调用，新日历方案本轮仅做本地验证。日期：2026-09-22。
+原设计日期：2026-09-22；现状核对：2026-10-23。源码已接入 `JevCategoryRecommendationService`、`JevCategoryClient` 和 `IWorkCalendarService`，配置优先级、测试入口与历史验证见[后端说明](../aio-life-server/docs/Jev时迹分类测试用例.md)。下文保留分层思路与原始设计建议，不把建议配置或旧模型实测作为当前运行事实；本次未调用真实 Jev、未验证部署。
 
 测试样例、执行结果及真实调用命令见 [Jev 时迹分类测试用例](../aio-life-server/docs/Jev时迹分类测试用例.md)。该文档位于独立后端仓库，本地工作区可查看。
 

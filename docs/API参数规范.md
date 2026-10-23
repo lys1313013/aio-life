@@ -1,5 +1,7 @@
 # API 参数规范
 
+本文适用于 `aio-life-server` 的 HTTP 业务接口及 Web、Mobile、浏览器插件调用。MCP 历史工具仍有 `page/size` 和 integer ID Schema，见[接口范围](需求/MCP接口需求方案.md)。独立 `aio-life-query` 的 REST 响应仍使用 `rscode/result/data`，GraphQL 使用 `data/errors/extensions`，分页使用 `limit/offset`；以其 [README](../aio-life-query/README.md) 为准，不套用业务后端协议。
+
 本规范适用于 Web、移动端与后端的业务接口。已有接口保留必要的输入兼容，两个客户端统一发送规范格式。
 
 ## ID 与基本类型

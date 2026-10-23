@@ -1,441 +1,65 @@
-# MCP 接口需求方案
-
-## 一、概述
-
-AIO Life 通过 **MCP（Model Context Protocol）** 向 AI 客户端暴露内部业务能力，使大模型可读取、写入用户的人生数据（时迹、任务、想法、仪表盘等），当前能力集中覆盖 `record` 业务域。
-
-### 连接信息
-
-| 项目 | 说明 |
-|---|---|
-| 传输协议 | `streamable-http`（WebMvc Streamable Server Transport） |
-| 端点 | `/api/mcp` |
-| 认证 | 复用 Sa-Token：`Authorization: Bearer <token>`，从请求上下文提取 `loginId` |
-| 能力声明 | `tools: true`（当前仅暴露 Tools，未声明 resources / prompts） |
-| 服务信息 | `aio-life-server-mcp` / `1.0.0` |
-| 实现 | `top.aiolife.mcp`（注解驱动注册）+ `top.aiolife.record.mcp`（业务 Tool） |
-
-### 开发约定
-
-- Tool 提供者类标注 `@McpToolProvider`，方法标注 `@Tool("中文功能描述")`
-- 请求参数用带 `@Description` 注解的 DTO（Req），由 LangChain4j 生成参数 Schema 描述
-- 所有 Tool 在当前登录用户上下文内执行，自动隔离用户数据
-- 数据访问均复用现有 Controller / Service，保证权限与业务一致性
-
-### 状态语义规范
-
-**给 AI 的「多值」状态筛选使用英文语义 code，响应使用中文业务标签，不暴露 0/1/2/3 等裸枚举数字**。阅读、观影、目标和B站学习视频共用 `ProgressStatusEnum`：
-
-| 业务字段 | 中文标签 | 说明 |
-|---|---|---|
-| 阅读状态 `status` | `想看` / `在看` / `看过` / `搁置` | `not_started/in_progress/completed/on_hold` |
-| 观影状态 `status` | `想看` / `在看` / `看过` / `搁置` | `not_started/in_progress/completed/on_hold` |
-| 任务明细 `priority` | `高` / `中` / `低` | 对应存储 1/10/20，默认 `中` |
-| 时迹 `relateType` | `阅读` / `观影` | 对应存储 1/2 |
-| 分类 `timeType` | `必须` / `积极` / `休闲` | 对应存储 1/2/3 |
-| 目标 `type` | `日目标` / `周目标` / `月度目标` / `季度目标` / `半年目标` / `年度目标` / `三年目标` / `五年目标` / `十年目标` / `人生目标` | 对应存储 1~10，见 `GoalTypeEnum`（注意：`GoalEntity` 上的旧注释 1=年度/2=月度/3=日 已过时，以枚举为准） |
-| 目标 `status` | `待开始` / `进行中` / `已完成` / `搁置` | `not_started/in_progress/completed/on_hold`，见 `ProgressStatusEnum` |
-| 纪念日 `type` | `纪念日` / `倒数日` | 对应存储 `anniversary` / `countdown` |
-| B站学习视频 `status` | `未开始` / `进行中` / `已暂停` / `已完成` | `not_started/in_progress/on_hold/completed`，复用 `ProgressStatusEnum`；`on_hold` 在本模块展示为“已暂停” |
-
-> 例外：二值 0/1 布尔字段（`isCompleted`、`isPinned`、`isStarred` 等）语义自明，无需转换，保持数字并带字段说明即可。
->
-> 查询工具的 `status` 筛选参数传语义 code；响应字段返回对应场景的中文标签。
-
----
-
-## 二、现有 Tool 接口
-
-共 9 个，定义于 `RecordMcpTools`、`DashboardMcpTools`、`ReadRecordMcpTools` 与 `MovieMcpTools`。
-
-### 2.1 time_record_queryByDateRange — 查询时间记录
-
-**用途**：查询指定日期范围内的所有时间记录，含分类名称与运动明细（仅运动名称和次数）。
-
-**请求参数**
-
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| startDate | string | 是 | 开始日期，`yyyy-MM-dd` |
-| endDate | string | 是 | 结束日期，`yyyy-MM-dd` |
-
-**响应**（`TimeRecordDateRangeVO[]`，按日期+开始时间倒序）
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| id | long | 记录 ID |
-| categoryId | long | 分类 ID |
-| date | date | 日期 |
-| startTime | int | 开始分钟（0–1439） |
-| endTime | int | 结束分钟（0–1439） |
-| title | string | 标题（空串转为 null） |
-| categoryName | string | 分类名称 |
-| exercises | [{ name: string, count: int }] | 运动明细（运动名称 + 次数） |
-
-### 2.2 time_record_save — 保存时间记录
-
-**用途**：新增一条时间记录。时间段由后端自动推导，AI 无需纠结具体时刻。
-
-**请求参数**（`TimeRecordSaveMcpReq`）
-
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| categoryId | string | 是 | 分类 ID（应优先通过 `time_tracker_category_list` 获取） |
-| date | string | 否 | 日期 `yyyy-MM-dd`，默认当天 |
-| title | string | 否 | 标题 |
-| description | string | 否 | 描述 |
-
-**时间段推导规则**：
-- 开始时间 = 当天最后一条记录的结束时间 + 1（当天无记录则为 00:00）
-- 结束时间 = 当前时刻；若结束 < 开始则结束 = 开始
-- 时间限制在 0–1439 分钟内
-
-**响应**：文案字符串，如 `保存成功！开始时间：09:30，结束时间：10:00，持续时长：31分钟`
-
-### 2.3 thought_save — 保存想法
-
-**用途**：保存一条想法，可附带多个关联事件。
-
-**请求参数**（`ThoughtSaveReq`）
-
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| content | string | 否 | 想法内容 |
-| isPinned | int | 否 | 是否置顶（0/1） |
-| events | [{ content: string }] | 否 | 关联事件列表 |
-
-**响应**：`true`
-
-### 2.4 time_tracker_category_list — 查询时迹分类
-
-**用途**：获取当前用户的全部时迹分类（含合并的公共分类），用于拿到分类 ID 供保存记录时使用。
-
-**请求参数**：无
-
-**响应**（`TimeTrackerCategoryMcpVO[]`）
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| id | long | 分类 ID |
-| name | string | 分类名称 |
-
-### 2.5 task_list — 查询任务列表
-
-**用途**：查询所有任务及明细，用于获取任务 ID 以便后续录入明细。
-
-**请求参数**：无
-
-**响应**（`TaskMcpVO[]`）
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| id | long | 任务 ID |
-| content | string | 任务内容 |
-| details | [{ id, content, isCompleted }] | 明细列表（isCompleted: 0未完成/1已完成） |
-
-### 2.6 task_detail_save — 录入任务明细
-
-**用途**：向某主任务下新增一条明细，并校验任务归属当前用户。
-
-**请求参数**（`TaskDetailSaveMcpReq`）
-
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| taskId | long | 是 | 主任务 ID（须属于当前用户） |
-| content | string | 是 | 明细内容 |
-| priority | string | 否 | 优先级：高 / 中 / 低，默认 中 |
-| isStarred | int | 否 | 是否关注：0-未关注，1-已关注，默认 0 |
-
-**响应**：`true`
-
-### 2.7 dashboard_cards — 读取仪表盘卡片
-
-**用途**：读取当前用户仪表盘可见卡片，返回类型、标题、当前值、总量。
-
-**请求参数**：无
-
-**响应**（`DashboardCardMcpVO[]`）
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| type | string | 卡片类型标识 |
-| title | string | 卡片标题 |
-| value | string | 当前值 |
-| totalTitle | string | 总量标题 |
-| totalValue | string | 总量值 |
-
-### 2.8 read_record_query — 查询阅读记录
-
-**用途**：分页/按条件查询阅读记录，供 AI 主动感知读书进度。
-
-**请求参数**（`ReadRecordQueryMcpReq`）
-
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| title | string | 否 | 书名模糊搜索 |
-| status | string | 否 | 状态筛选：`not_started/in_progress/completed/on_hold` |
-| page | int | 否 | 页码，默认 1 |
-| size | int | 否 | 每页条数，默认 10，最大 100 |
-
-**响应**（`ReadRecordPageMcpVO`，分页）
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| records | [] | 记录列表（字段见下） |
-| total | long | 总条数 |
-
-`records[]` 元素（`ReadRecordMcpVO`）：
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| id | long | 阅读记录 ID |
-| title | string | 书名 |
-| author | string | 作者 |
-| type | int | 类型 |
-| status | string | 状态（中文）：想看 / 在看 / 看过 / 搁置 |
-| totalProgress | int | 总进度 |
-| currentProgress | int | 当前进度 |
-| startTime | datetime | 开始时间 |
-| finishTime | datetime | 完成时间 |
-| remark | string | 备注 |
-
-### 2.9 movie_query — 查询观影记录
-
-**用途**：分页/按条件查询观影记录，供 AI 主动感知观影进度。字段结构与阅读一致，`author` 换为 `director`（导演）。
-
-**请求参数**（`MovieQueryMcpReq`）
-
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| title | string | 否 | 片名模糊搜索 |
-| director | string | 否 | 导演搜索 |
-| status | string | 否 | 状态筛选：`not_started/in_progress/completed/on_hold` |
-| page | int | 否 | 页码，默认 1 |
-| size | int | 否 | 每页条数，默认 10，最大 100 |
-
-**响应**（`MoviePageMcpVO`，分页）
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| records | [] | 记录列表（字段见下） |
-| total | long | 总条数 |
-
-`records[]` 元素（`MovieMcpVO`）：
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| id | long | 观影记录 ID |
-| title | string | 片名 |
-| director | string | 导演 |
-| type | int | 类型 |
-| status | string | 状态（中文）：想看 / 在看 / 看过 / 搁置 |
-| totalProgress | int | 总进度 |
-| currentProgress | int | 当前进度 |
-| startTime | datetime | 开始时间 |
-| finishTime | datetime | 完成时间 |
-| remark | string | 备注 |
-
----
-
-## 三、待新增 Tool 接口
-
-以下接口基于现有业务规划，请求参数遵循现有 `@Description` DTO 约定。
-
-### 3.1 时迹扩展（推荐）
-
-#### time_record_save 参数增强（关联业务）
-
-在现有 `TimeRecordSaveMcpReq` 基础上新增两个**可选**字段，使 AI 可以一次完成「记录时间 + 关联读书/观影」：
-
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| relateType | string | 否 | 关联类型：阅读 / 观影 |
-| relateId | long | 否 | 关联业务记录 ID |
-
-> 保存时后端沿用现有「状态联动」逻辑：若关联业务为「未开始/想看」则自动置为「进行中/在看」。
-
-#### time_record_recommend — 推荐时间块与分类
-
-**用途**：AI 在不确定用户当前在干什么/应推荐什么分类时，由后端依据历史记录推荐；复用 `recommendNext` + `recommendType` 的能力。
-
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| date | string | 否 | 日期 `yyyy-MM-dd`，默认当天 |
-
-**响应**
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| startTime | int | 推荐开始分钟 |
-| endTime | int | 推荐结束分钟 |
-| categoryId | long | 推荐分类 ID（可能为空） |
-
-#### time_record_update / time_record_delete — 时间记录编辑与删除
-
-**用途**：允许 AI 修正错误记录（改分类/改时间、删除单条/当天）。
-
-| 名称 | 参数 | 说明 |
-|---|---|---|
-| time_record_update | id: long 必填；startTime/endTime/categoryId/title/description 可选 | 按需更新字段，校验重叠 |
-| time_record_delete | id: long 必填 | 删除单条时间记录 |
-
-### 3.2 目标 + 里程碑（推荐，最高优先级）
-
-目标是 AI「了解用户」最核心的数据——AI 知道用户在追什么、进度如何、卡在哪之后，建议的针对性完全不同。
-
-> 说明：`goal`（目标，带层级与进度）与 `milestone`（人生里程碑，独立实体）在现有模型中无关联。以下工具分别覆盖两者；「里程碑」不做「挂在目标下的子任务」语义。
-
-#### goal_query — 查询目标列表及进度
-
-**用途**：查询当前用户的目标，返回状态、进度与父子层级，供 AI 感知用户正在追求什么。
-
-**请求参数**（`GoalQueryMcpReq`）
-
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| type | int | 否 | 目标类型筛选：1日目标，2周目标，3月度目标，4季度目标，5半年目标，6年度目标，7三年目标，8五年目标，9十年目标，10人生目标（见 `GoalTypeEnum`） |
-| status | string | 否 | 状态筛选：`not_started/in_progress/completed/on_hold` |
-| keyword | string | 否 | 关键词，模糊匹配标题/描述/标签 |
-| year | int | 否 | 年份筛选（用于年度/月度目标） |
-| month | int | 否 | 月份筛选（用于月度目标，需配合 year） |
-| page | int | 否 | 页码，默认 1 |
-| size | int | 否 | 每页条数，默认 10，最大 100 |
-
-**响应**（`GoalPageMcpVO`，分页）
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| records | [] | 目标列表（字段见下） |
-| total | long | 总条数 |
-
-`records[]` 元素（`GoalMcpVO`）：
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| id | long | 目标 ID |
-| type | string | 目标类型（中文）：日目标 / 周目标 / 月度目标 / 季度目标 / 半年目标 / 年度目标 / 三年目标 / 五年目标 / 十年目标 / 人生目标 |
-| title | string | 目标标题 |
-| description | string | 目标描述 |
-| status | string | 状态（中文）：待开始 / 进行中 / 已完成 / 搁置 |
-| targetValue | int | 目标值（可为空，表示无量化目标） |
-| currentValue | int | 当前值 |
-| year / month / day | int | 所属年/月/日（按 type 生效） |
-| parentId | long | 父目标 ID（可为空） |
-| startDate / endDate | datetime | 起止时间 |
-| completedAt | datetime | 完成时间（status 为已完成时非空） |
-| tags | string[] | 目标标签（由存储 JSON 解析为数组） |
-| completedCount / totalCount | int | 已完成子目标数 / 子目标总数 |
-
-> 返回同时带上 `parentId` 与子目标计数，AI 即可还原「年度目标 → 月度目标 → 日目标」的层级结构。
-
-#### goal_progress_update — 更新目标进展
-
-**用途**：更新某目标的当前进度值和/或状态（如标记完成、搁置），校验目标归属当前用户。AI 对话中自然就能帮用户推进目标。
-
-**请求参数**（`GoalProgressUpdateMcpReq`）
-
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| goalId | long | 是 | 目标 ID（应优先通过 `goal_query` 获取，须属于当前用户） |
-| currentValue | int | 否 | 更新当前值；与 status 至少传一个 |
-| status | string | 否 | 状态（中文）：进行中 / 已完成 / 搁置 |
-
-**业务规则**：
-- 仅允许修改上述两字段，标题、目标值等不在本工具职责内（避免 AI 误改目标定义）
-- `status` 传 `已完成` 时：后端自动写入 `completedAt`；若目标有 `targetValue` 且 `currentValue` 未传，自动置为 `targetValue`
-- `status` 传 `进行中` 时：清空 `completedAt`
-- 仅允许当前状态为「待开始 / 进行中」的目标流转，「已完成 / 搁置」需先恢复为进行中
-
-**响应**：文案字符串，如 `目标「读完 12 本书」进度已更新：7/12`，状态变更时附带 `状态已变更为：已完成`
-
-
-
-### 3.3 纪念日
-
-#### anniversary_query — 查询纪念日
-
-**用途**：查询当前用户的纪念日/倒数日，由后端计算距今天数，供 AI 主动提醒临近日子。
-
-**请求参数**（`AnniversaryQueryMcpReq`）
-
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| type | string | 否 | 类型筛选（中文）：纪念日 / 倒数日 |
-| withinDays | int | 否 | 仅返回 N 天内即将到来的记录（按 targetDate 的月-日匹配，跨年生效），默认不过滤 |
-
-**响应**（`AnniversaryMcpVO[]`，按距今天数升序）
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| id | long | 记录 ID |
-| title | string | 标题 |
-| type | string | 类型（中文）：纪念日 / 倒数日 |
-| targetDate | date | 目标日期 |
-| note | string | 备注 |
-| daysRemaining | int | 距今天数：正数=还有 N 天，负数=已过 N 天；纪念日按「下一次发生」计算（即若今年已过则算到明年），倒数日按 targetDate 直接计算 |
-
-> `daysRemaining` 必须由后端计算（以服务器当天为准），不要让 AI 自行推算日期。
-
-### 3.4 B站学习视频（只读）
-
-供 AI 感知用户的视频学习进度与投入。仅提供查询工具，写入仍由前端/同步逻辑负责。
-
-#### b_video_query — 查询B站学习视频
-
-**用途**：分页/按条件查询 B 站学习视频，供 AI 感知学习进度，status 以中文语义返回。
-
-**请求参数**（`BVideoQueryMcpReq`）
-
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| title | string | 否 | 标题模糊搜索 |
-| status | string | 否 | 状态筛选：`not_started/in_progress/on_hold/completed`（见 `ProgressStatusEnum`） |
-| page | int | 否 | 页码，默认 1 |
-| size | int | 否 | 每页条数，默认 10，最大 100 |
-
-**响应**（`BVideoPageMcpVO`，分页）
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| records | [] | 视频列表（字段见下） |
-| total | long | 总条数 |
-
-`records[]` 元素（`BVideoMcpVO`）：
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| id | long | 记录 ID |
-| title | string | 视频标题 |
-| ownerName | string | UP 主 |
-| bvid | string | BV 号 |
-| status | string | 状态（中文）：未开始 / 进行中 / 已暂停 / 已完成 |
-| duration | int | 视频总时长（秒） |
-| watchedDuration | int | 已观看时长（秒） |
-| episodes | int | 总集数 |
-| currentEpisode | int | 当前观看集数 |
-| progressPercentage | double | 观看进度百分比，由后端计算（watchedDuration/duration×100，保留 1 位小数） |
-| lastWatched | datetime | 最后观看时间 |
-| notes | string | 学习笔记 |
-
-#### b_video_statistics — B站学习统计
-
-**用途**：返回学习时长汇总与各状态数量，供 AI 了解整体学习投入。
-
-**请求参数**：无
-
-**响应**（`BVideoStatisticsMcpVO`）
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| studiedSeconds | int | 已学习总时长（秒） |
-| unstudiedSeconds | int | 未学习总时长（秒） |
-| totalSeconds | int | 视频总时长（秒） |
-| progressPercentage | double | 整体学习进度百分比（保留 1 位小数） |
-| statusCounts | map | 各状态数量，key 为中文状态标签 |
-
-## 四、实现建议
-
-1. **新增工具组织**：按「阅读」「观影」业务域隔离为 `ReadRecordMcpTools` 与 `MovieMcpTools`，避免 `RecordMcpTools` 过度膨胀；目标归入 `GoalMcpTools`，纪念日归入 `AnniversaryMcpTools`，B站学习视频归入 `BVideoMcpTools`
-2. **入参校验**：复用现有 Controller 的 `@Valid`/业务校验；`movie/read` 的 `save`/`update` 直接透传已有 `ReadRecordReq` / `MovieReq`；`goal_progress_update` 参照 `GoalController.updateGoal` 的用户归属校验
-3. **响应收敛**：MCP Tool 返回尽量精简字段（顶层用 VO），避免把创建时间等系统字段暴露给模型；状态字段一律转中文语义标签
-4. **注册即生效**：`McpToolRegistry` 自动扫描 `@McpToolProvider`，新增 Tool 无需改配置，发版即自动暴露
+# MCP 接口范围与需求
+
+2026-10-23 按工具提供者源码核对。业务后端 `/api/mcp` 提供读写工具；独立查询服务的 `/mcp` 仅提供只读查询，两者工具、协议响应与权限链路分别维护。连接和调试步骤见[后端接入说明](../../aio-life-server/docs/mcp/streamable-http.md)。
+
+## 当前工具目录
+
+源码当前注册 16 个工具，分布于 `top.aiolife.record.mcp` 的 8 个 `@McpToolProvider`。部署后的目录及字段以实际 `tools/list` 为准；本文数量仅表示本次源码盘点，未调用运行环境。
+
+| 工具 | 能力 | 主要参数／限制 |
+| --- | --- | --- |
+| `time_record_queryByDateRange` | 读取日期范围时迹，含分类和精简运动明细 | `startDate`、`endDate`，日期字符串 |
+| `time_record_save` | 新增一段时迹 | `categoryId`、可选 `date/title/description`；起止分钟由后端计算 |
+| `thought_save` | 新增闪念及关联事件 | `content`、`events[].content` |
+| `time_tracker_category_list` | 当前用户可见时迹分类 | 无参数 |
+| `task_list` | 待办主任务及明细 | 无参数，供后续选择真实 ID |
+| `task_detail_save` | 新增待办明细 | `taskId`、`content`、可选 `priority/isStarred` |
+| `task_detail_update` | 修改现有待办明细 | 字符串 `id`；`priority/isStarred/isCompleted` 至少一项 |
+| `dashboard_cards` | 当前用户仪表盘卡片 | 无参数 |
+| `read_record_query` | 分页阅读记录 | `title/status/page/size` |
+| `movie_query` | 分页观影记录 | `title/status/page/size` |
+| `goal_query` | 分页目标、进度及子目标统计 | `type/status/keyword/year/month/page/size` |
+| `goal_progress_update` | 修改目标值或状态 | `goalId`，`currentValue/status` 至少一项 |
+| `anniversary_query` | 纪念日／倒数日 | `type/withinDays` |
+| `b_video_query` | 分页 B 站学习视频 | `title/status/page/size` |
+| `b_video_statistics` | B 站学习时长与状态统计 | 无参数 |
+| `douban_wishlist_add` | 按豆瓣书籍／影视地址录入想读／想看 | 请求模型及重复条目行为以工具 Schema 为准 |
+
+## 参数与结果边界
+
+- 用户身份来自 Bearer 登录态／API Key，不接受工具参数指定所属用户。菜单二级锁仍适用；不能因 AI 发起调用而跳过业务权限。
+- 日期使用 `yyyy-MM-dd`。时迹分钟为闭区间，时长为 `endTime - startTime + 1`。
+- `time_record_save` 从所选日期最后一条记录的结束分钟加一开始，结束分钟取服务端当前时间，并裁到当天范围；不接受任意 `startTime/endTime`、阅读／观影关联或运动明细。日期省略时为服务端今天。需要显式时间和附属记录时使用现有 REST 接口。
+- `task_detail_update` 只更新非 `null` 字段，数字 `0` 仍表示明确修改；须修改已有且属于当前用户的明细，不会隐式新增。
+- 阅读、观影、目标和视频查询的状态筛选使用 `not_started/in_progress/completed/on_hold`。响应展示中文业务标签，各模块文案可不同。
+- 目标类型为 `GoalTypeEnum` 的 1–10；目标进度更新的 `status` 当前使用中文“进行中／已完成／搁置”，不能照搬查询的英文筛选值。
+- 纪念日查询 `type` 当前使用“纪念日／倒数日”；纪念日距离按下一次发生日期计算，倒数日按实际目标日期计算。
+- 优先级为 `1/10/20`（高／中／低），二值字段 `isStarred/isCompleted` 使用数字 0／1。不要把这些业务数量改成字符串 ID。
+
+## 与 REST 规范的现存差异
+
+这些是当前实现事实，不能只改文档就声称接口已统一：
+
+| 项目 | 当前 MCP 行为 |
+| --- | --- |
+| 分页 | 阅读、观影、目标、视频工具仍使用 `page/size`，默认 1／10，最多 100；不是 REST 新请求的 `page/pageSize` |
+| 分页返回 | 各工具 VO 保留 `records/total`，不按 REST 的 `items/total` 解析 |
+| ID 入参 | `categoryId`、待办更新 `id` 为字符串；部分历史 DTO 的 `Long` 入参（如 `taskId/goalId`）仍生成 integer Schema，存在客户端大整数精度边界 |
+| 结果包装 | MCP `tools/call` 返回 `content` 与 `isError`；业务值在文本内容中，不统一套用 HTTP `{ code, message, data }` |
+
+客户端不得把大整数 ID 经 JavaScript `Number` 转换后再提交；无法无损满足旧 integer Schema 的工具，暂用支持字符串 ID 的对应 REST 入口。后续契约调整须同时修改 DTO、Schema 与调用方，并单独验证，不能只替换本文类型或分页名。
+
+## 尚未注册的扩展需求
+
+- `time_record_recommend`：推荐时间段与分类。
+- `time_record_update`、`time_record_delete`：编辑或删除时迹。
+- `time_record_save` 的阅读／观影关联、运动明细增强。
+- 独立里程碑工具：不能把里程碑当作目标的子任务。
+
+这些名称不在当前目录中，不向客户端伪装成可调用工具。原方案列为“待新增”的目标、纪念日和 B 站工具现已实现，以上表为准。
+
+## 维护与验证
+
+新增工具在 `@McpToolProvider` 类中定义 `@Tool` 方法，复用 Service／业务规则；注册器当前支持零参或单 DTO 参数，参数说明使用 `@Description`。不要照搬早期 Controller 加 `@McpOperation` 的草案。
+
+实际调用按“发现目录 → 读取 inputSchema → 只读核对目标 → 明确写入 → 检查 isError 与业务内容”进行；工具返回字符串不能只凭 HTTP 200 判定成功。测试覆盖用户隔离、二级锁、长 ID、零值、分页及写入失败恢复。源码目录和测试结果、真实客户端、生产部署分别报告。
