@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>专注 · 任务管理</title>
+<style>
+:root{color-scheme:light dark;--bg:#f5f3ed;--surface:#faf9f5;--ink:#262722;--muted:#78796f;--line:#e4e4dc;--accent:#9c742b;--soft:#eee7d7;--button:#292b25;--button-text:#faf9f5;--overlay:#191a1855}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}button,input,textarea{font:inherit}button{color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:4px}button{border:0;background:none}button:disabled{opacity:.45;cursor:default}.app{max-width:430px;min-height:100dvh;margin:auto;padding:36px 26px 24px;background:var(--surface);display:flex;flex-direction:column}.header{display:flex;align-items:center;justify-content:space-between;gap:16px}.date{color:var(--muted);font-size:13px;letter-spacing:.04em;margin:0 0 8px}h1{font-size:30px;line-height:1.25;font-weight:600;letter-spacing:-1px;margin:0}.icon{min-width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0}.icon:hover{background:var(--soft)}svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.add{background:var(--ink);color:var(--surface)}.add:hover{background:var(--accent)}.focus{margin-top:39px;padding-bottom:30px;border-bottom:1px solid var(--line)}.eyebrow{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--accent);letter-spacing:.06em}.dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}.focus-title{font-size:28px;font-weight:500;line-height:1.5;letter-spacing:-.5px;margin:17px 0 12px;overflow-wrap:anywhere}.focus-note{font-size:14px;line-height:1.75;color:var(--muted);margin:0 0 22px;white-space:pre-wrap;overflow-wrap:anywhere}.focus-actions{display:flex;gap:12px;align-items:center}.primary{background:var(--button);color:var(--button-text);border-radius:13px;min-height:48px;padding:12px 19px;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:9px}.primary:hover{background:var(--accent)}.primary svg{width:18px;height:18px}.text-action{min-height:44px;padding:10px 8px;font-size:14px;color:var(--muted)}.section-heading{margin:26px 0 10px;display:flex;align-items:center;justify-content:space-between;gap:10px}h2{font-size:14px;font-weight:500;margin:0}.count{font-size:12px;color:var(--muted)}.tasks{list-style:none;padding:0;margin:0}.task{display:flex;align-items:center;gap:8px;min-height:68px}.choose{width:44px;height:44px;flex-shrink:0;display:flex;justify-content:center;align-items:center}.ring{width:21px;height:21px;border:1.3px solid var(--line);border-color:color-mix(in srgb,var(--muted) 55%,transparent);border-radius:50%;display:flex;align-items:center;justify-content:center}.choose:hover .ring{border-color:var(--accent);background:var(--soft)}.choose svg{width:12px;height:12px;stroke:var(--accent)}.task-main{text-align:left;min-width:0;flex:1;min-height:56px;padding:9px 0}.task-name{display:block;font-size:15px;line-height:1.55;overflow-wrap:anywhere}.task-meta{display:block;font-size:12px;line-height:1.5;color:var(--muted);margin-top:3px}.task-edit{color:var(--muted);width:44px;height:44px}.task-edit svg{width:16px;height:16px}.completed-toggle{display:flex;align-items:center;gap:8px;padding:12px 0;min-height:44px;font-size:13px;color:var(--muted);margin-top:18px}.completed-toggle svg{width:14px;height:14px;transition:transform .15s}.completed-toggle[aria-expanded="true"] svg{transform:rotate(90deg)}.done .task-name{text-decoration:line-through;color:var(--muted)}.done .ring{background:var(--soft);border-color:transparent}.empty{font-size:14px;color:var(--muted);line-height:1.8;padding:18px 0;margin:0}.footer{margin-top:auto;padding-top:36px;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}.progress{height:2px;flex:1;background:var(--line);border-radius:4px;overflow:hidden}.progress span{display:block;height:100%;background:var(--accent);transition:width .2s}.status{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);max-width:calc(100vw - 40px);padding:11px 18px;background:var(--ink);color:var(--surface);border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .15s;z-index:2}.status.visible{opacity:1}dialog{border:0;border-radius:22px;padding:24px;width:calc(100vw - 40px);max-width:380px;background:var(--surface);color:var(--ink);max-height:calc(100dvh - 48px);overflow:auto;box-shadow:0 20px 80px #0002}dialog::backdrop{background:var(--overlay);backdrop-filter:blur(3px)}.dialog-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.dialog-head h2{font-size:19px;font-weight:600}label{display:block;font-size:13px;color:var(--muted);margin:16px 0 8px}input,textarea{width:100%;font-size:16px;padding:12px 13px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);outline-offset:3px}textarea{min-height:100px;resize:vertical}.form-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:22px}.validation{font-size:13px;color:var(--accent);margin:10px 0 0}.sr-only{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}[hidden]{display:none!important}
+@media(min-width:600px){body{padding:34px 20px}.app{min-height:780px;border-radius:28px;box-shadow:0 10px 60px #00000005;padding-top:34px}}
+@media(max-width:350px){.app{padding:28px 20px 22px}.focus-title{font-size:25px}.focus{margin-top:31px}.task{gap:4px}}
+@media(prefers-color-scheme:dark){:root{--bg:#171816;--surface:#20211e;--ink:#eeede6;--muted:#a3a598;--line:#35372f;--accent:#d0af6e;--soft:#353125;--button:#e9e7dd;--button-text:#20211e;--overlay:#0009}.primary:hover{color:#20211e}.add:hover{color:#20211e}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="header"><div><p class="date">10 月 25 日 · 周日</p><h1>专注</h1></div><button class="icon add" id="add" aria-label="新增任务"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></header>
+  <section class="focus" aria-label="当前任务" id="focus"></section>
+  <section aria-labelledby="next-title"><div class="section-heading"><h2 id="next-title">接下来</h2><span class="count" id="next-count"></span></div><ul class="tasks" id="next"></ul><p class="empty" id="next-empty" hidden>没有其他安排，留一点时间给自己。</p></section>
+  <section><button class="completed-toggle" id="completed-toggle" aria-expanded="false" aria-controls="completed"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg><span id="completed-label">已完成</span></button><div id="completed" hidden><ul class="tasks" id="done"></ul><p class="empty" id="done-empty" hidden>完成的事情会留在这里。</p></div></section>
+  <footer class="footer"><span id="progress-text"></span><div class="progress" role="progressbar" aria-label="今日任务完成进度" aria-valuemin="0" aria-valuemax="100" id="progress"><span id="progress-fill"></span></div></footer>
+</main>
+<div class="status" id="status" role="status" aria-live="polite"></div>
+<dialog id="editor" aria-labelledby="editor-title"><form id="task-form"><div class="dialog-head"><h2 id="editor-title">新增任务</h2><button type="button" class="icon" id="close-editor" aria-label="关闭编辑"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div><label for="title-input">要做什么</label><input id="title-input" name="title" maxlength="120" placeholder="写下一件想完成的事" required autocomplete="off"><label for="note-input">备注</label><textarea id="note-input" name="note" maxlength="500" placeholder="从一个小步骤开始"></textarea><p class="validation" id="validation" role="alert" hidden>写下任务名称，再保存。</p><div class="form-actions"><button class="text-action" id="cancel-editor" type="button">取消</button><button class="primary" type="submit">保存</button></div></form></dialog>
+<script>
+(() => {
+  'use strict';
+  const key = 'aio-focus-prototype-v1';
+  const initial = [
+    { id: 'focus-1', title: '复习架构设计30分钟', note: '翻开笔记，先回顾昨天的三个知识点。', done: false },
+    { id: 'focus-2', title: '整理本周计划', note: '梳理下周最重要的三件事', done: false },
+    { id: 'focus-3', title: '完善任务管理交互', note: '工作', done: false },
+    { id: 'focus-4', title: '买水果', note: '生活', done: false },
+    { id: 'focus-5', title: '晚上散步', note: '留半小时给自己', done: false }
+  ];
+  let tasks = initial.map(task => ({ ...task }));
+  let currentId = tasks[0].id;
+  try {
+    const saved = JSON.parse(localStorage.getItem(key));
+    if (saved && Array.isArray(saved.tasks) && saved.tasks.every(t => typeof t.id === 'string' && typeof t.title === 'string' && t.title.trim() && typeof t.note === 'string' && typeof t.done === 'boolean')) {
+      tasks = saved.tasks;
+      currentId = typeof saved.currentId === 'string' ? saved.currentId : null;
+    }
+  } catch (_) {}
+  const $ = id => document.getElementById(id);
+  let editingId = null;
+  let toastTimer;
+  const checkIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
+  const editIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15z"/></svg>';
+  function save() { try { localStorage.setItem(key, JSON.stringify({ tasks, currentId })); } catch (_) {} }
+  function announce(text) { $('status').textContent = text; $('status').classList.add('visible'); clearTimeout(toastTimer); toastTimer = setTimeout(() => $('status').classList.remove('visible'), 2100); }
+  function current() { return tasks.find(task => task.id === currentId && !task.done) || tasks.find(task => !task.done); }
+  function edit(task) {
+    editingId = task ? task.id : null;
+    $('editor-title').textContent = task ? '编辑任务' : '新增任务';
+    $('title-input').value = task ? task.title : '';
+    $('note-input').value = task ? task.note : '';
+    $('validation').hidden = true;
+    $('editor').showModal();
+    $('title-input').focus();
+  }
+  function row(task, completed) {
+    const li = document.createElement('li'); li.className = 'task' + (completed ? ' done' : '');
+    const pick = document.createElement('button'); pick.className = 'choose';
+    pick.setAttribute('aria-label', (completed ? '恢复任务：' : '设为当前任务：') + task.title);
+    pick.innerHTML = '<span class="ring">' + (completed ? checkIcon : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>') + '</span>';
+    pick.onclick = () => { if (completed) { task.done = false; if (!current()) currentId = task.id; announce('任务已恢复'); } else { currentId = task.id; announce('已切换当前任务'); } save(); render(); };
+    const content = document.createElement('button'); content.className = 'task-main'; content.setAttribute('aria-label', '编辑任务：' + task.title);
+    const title = document.createElement('span'); title.className = 'task-name'; title.textContent = task.title; content.append(title);
+    if (task.note && !completed) { const meta = document.createElement('span'); meta.className = 'task-meta'; meta.textContent = task.note; content.append(meta); }
+    content.onclick = () => edit(task); li.append(pick, content); return li;
+  }
+  function render() {
+    const active = current(); currentId = active ? active.id : null;
+    const remaining = tasks.filter(task => !task.done && task.id !== currentId);
+    const completed = tasks.filter(task => task.done);
+    const focus = $('focus'); focus.replaceChildren();
+    const eyebrow = document.createElement('div'); eyebrow.className = 'eyebrow'; eyebrow.innerHTML = '<span class="dot"></span>';
+    eyebrow.append(document.createTextNode(active ? '只做这一件' : '今天，做得很好')); focus.append(eyebrow);
+    const title = document.createElement('h2'); title.className = 'focus-title'; title.textContent = active ? active.title : '事情都完成了'; focus.append(title);
+    const note = document.createElement('p'); note.className = 'focus-note'; note.textContent = active ? (active.note || '专心把眼前这件小事做好。') : '歇一会儿，享受属于自己的时间。'; focus.append(note);
+    const actions = document.createElement('div'); actions.className = 'focus-actions';
+    const primary = document.createElement('button'); primary.className = 'primary';
+    if (active) { primary.innerHTML = checkIcon; primary.append(document.createTextNode('完成这件事')); primary.onclick = () => { active.done = true; currentId = null; save(); render(); announce('完成了一件事'); }; }
+    else { primary.textContent = '记下一件新事'; primary.onclick = () => edit(null); }
+    actions.append(primary);
+    if (active) { const editButton = document.createElement('button'); editButton.className = 'icon'; editButton.innerHTML = editIcon; editButton.setAttribute('aria-label', '编辑当前任务'); editButton.onclick = () => edit(active); actions.append(editButton); }
+    focus.append(actions);
+    $('next').replaceChildren(...remaining.map(task => row(task, false)));
+    $('done').replaceChildren(...completed.map(task => row(task, true)));
+    $('next-empty').hidden = remaining.length > 0;
+    $('done-empty').hidden = completed.length > 0;
+    $('next-count').textContent = remaining.length ? remaining.length + ' 件事' : '';
+    $('completed-label').textContent = '已完成 · ' + completed.length;
+    $('progress-text').textContent = '今天已完成 ' + completed.length + ' / ' + tasks.length;
+    const percent = tasks.length ? Math.round(completed.length / tasks.length * 100) : 0;
+    $('progress-fill').style.width = percent + '%'; $('progress').setAttribute('aria-valuenow', String(percent));
+  }
+  $('add').onclick = () => edit(null);
+  $('close-editor').onclick = $('cancel-editor').onclick = () => $('editor').close();
+  $('completed-toggle').onclick = () => { const expanded = $('completed-toggle').getAttribute('aria-expanded') !== 'true'; $('completed-toggle').setAttribute('aria-expanded', String(expanded)); $('completed').hidden = !expanded; };
+  $('task-form').onsubmit = event => {
+    event.preventDefault(); const title = $('title-input').value.trim(); const note = $('note-input').value.trim();
+    if (!title) { $('validation').hidden = false; $('title-input').focus(); return; }
+    const task = tasks.find(item => item.id === editingId);
+    if (task) { task.title = title; task.note = note; }
+    else { const created = { id: 'focus-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8), title, note, done: false }; tasks.push(created); if (!current()) currentId = created.id; }
+    save(); render(); $('editor').close(); announce(task ? '修改已保存' : '任务已添加');
+  };
+  render();
+})();
+</script>
+</body>
+</html>

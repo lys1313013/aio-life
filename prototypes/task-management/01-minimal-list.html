@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>今天 · 极简清单</title>
+<style>
+:root{color-scheme:light dark;--page:#f2f3f5;--paper:#fff;--ink:#24272c;--muted:#818690;--faint:#aeb3bd;--line:#eef0f3;--blue:#3975e9;--soft:#edf3ff;--field:#f5f6f8;--shadow:0 18px 80px #1e2d4010;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--page);color:var(--ink)}button,input,select,textarea{font:inherit}button{cursor:pointer;color:inherit;-webkit-tap-highlight-color:transparent}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--blue);outline-offset:4px}button{border:0;background:none}svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}.app{position:relative;max-width:430px;min-height:100svh;margin:auto;background:var(--paper);padding:42px 28px 128px;box-shadow:var(--shadow)}.brand{display:flex;align-items:center;gap:8px;margin-bottom:38px;font-size:11px;font-weight:600;letter-spacing:2.2px;color:var(--muted)}.brand-mark{width:16px;height:16px;border:1.5px solid currentColor;border-radius:5px;display:grid;place-items:center}.brand-mark:after{content:"";width:5px;height:5px;border-radius:50%;background:var(--blue)}.date{font-size:13px;letter-spacing:.5px;color:var(--muted);margin:0 0 9px}.heading{display:flex;align-items:baseline;justify-content:space-between;gap:16px}h1{margin:0;font-size:36px;letter-spacing:-1.6px;font-weight:650;line-height:1.3}.remaining{font-size:13px;color:var(--muted)}.progress{margin:20px 0 34px;height:2px;background:var(--line);overflow:hidden}.progress span{display:block;height:100%;background:var(--blue);transition:width .2s}.section-title{display:flex;align-items:center;justify-content:space-between;margin:27px 0 8px;font-size:12px;font-weight:500;letter-spacing:1px;color:var(--muted)}.section-title span{letter-spacing:0;color:var(--faint);font-size:11px}ul{list-style:none;margin:0;padding:0}.task{display:flex;align-items:flex-start;gap:9px;margin-left:-11px;min-width:0}.check{display:grid;place-items:center;width:44px;height:58px;flex:0 0 44px}.circle{width:21px;height:21px;border:1.4px solid #c8cdd6;border-radius:50%;display:grid;place-items:center;color:var(--paper)}.circle svg{width:13px;height:13px;stroke-width:2.6}.task-edit{flex:1;min-width:0;text-align:left;padding:16px 0 17px;border-bottom:1px solid var(--line)}.task-title{display:block;font-size:16px;line-height:1.5;overflow-wrap:anywhere;letter-spacing:.05px}.task-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:5px;font-size:11px;line-height:1.5;color:var(--muted)}.task-meta .time{color:var(--blue)}.dot{color:var(--faint)}.task.completed .circle{border-color:var(--blue);background:var(--blue);color:#fff}.task.completed .task-title{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1px}.completed-toggle{display:flex;align-items:center;gap:8px;min-height:44px;padding:0;margin-top:28px;font-size:12px;color:var(--muted)}.completed-toggle svg{width:15px;height:15px;transition:transform .15s}.completed-toggle[aria-expanded=true] svg{transform:rotate(90deg)}.empty{padding:38px 0 28px;font-size:14px;color:var(--muted);line-height:1.8}.empty strong{display:block;color:var(--ink);font-size:18px;font-weight:500;margin-bottom:6px}.footer{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,430px);padding:16px 28px max(24px,env(safe-area-inset-bottom));background:var(--paper);display:flex;align-items:center;gap:7px;border-top:1px solid var(--line);z-index:2}.nav-button{min-width:64px;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:var(--muted);font-size:10px}.nav-button[aria-pressed=true]{color:var(--blue)}.nav-button svg{width:21px;height:21px}.add{margin-left:auto;border-radius:16px;background:var(--blue);width:50px;height:50px;display:grid;place-items:center;color:white;box-shadow:0 5px 16px #3975e923}.add svg{width:24px;height:24px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}dialog{width:min(366px,calc(100% - 32px));max-height:calc(100svh - 40px);overflow:auto;border:0;border-radius:22px;background:var(--paper);color:var(--ink);padding:24px;box-shadow:0 24px 90px #0003}dialog::backdrop{background:#151b294d;backdrop-filter:blur(3px)}.dialog-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.dialog-head h2{font-size:19px;font-weight:600;margin:0}.close{width:44px;height:44px;margin:-11px -12px -11px 0;display:grid;place-items:center;color:var(--muted)}label.field{display:block;font-size:12px;color:var(--muted);margin-top:17px}input,select,textarea{display:block;width:100%;min-width:0;border:0;border-radius:10px;background:var(--field);color:var(--ink);padding:13px 12px;font-size:16px;margin-top:7px}textarea{resize:vertical;min-height:90px;max-height:180px;line-height:1.5}.form-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px}.save{width:100%;min-height:46px;margin-top:24px;border-radius:11px;background:var(--blue);color:white;font-size:15px}.error{color:#c94545;font-size:12px;margin:12px 0 0}.notice{position:fixed;bottom:110px;left:50%;transform:translateX(-50%);max-width:calc(100% - 40px);border-radius:10px;padding:11px 16px;background:var(--ink);color:var(--paper);font-size:12px;z-index:4}.notice:empty{display:none}[hidden]{display:none!important}
+@media(min-width:600px){body{padding:30px 0}.app{min-height:820px;border-radius:28px;padding-top:38px}.footer{position:sticky;bottom:0;left:auto;transform:none;margin:0 auto;border-radius:0 0 28px 28px;margin-top:-100px}.app{padding-bottom:148px}}
+@media(max-width:350px){.app{padding-left:22px;padding-right:22px}.footer{padding-left:22px;padding-right:22px}.task-title{font-size:15px}.form-grid{grid-template-columns:1fr}.brand{margin-bottom:30px}}
+@media(prefers-color-scheme:dark){:root{--page:#111214;--paper:#1b1c1f;--ink:#e7e9ee;--muted:#959aa6;--faint:#6f7580;--line:#2b2d32;--blue:#7ca7ff;--soft:#26334d;--field:#27292e;--shadow:none}.circle{border-color:#5b606b}.add,.save{color:#142440}.task-meta .time{color:var(--blue)}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main class="app">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span>AIO LIFE</div>
+  <header><p class="date">10月25日 · 星期日</p><div class="heading"><h1 id="page-title">今天</h1><span class="remaining" id="remaining"></span></div><div class="progress" role="progressbar" aria-label="任务完成进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progress-fill"></span></div></header>
+  <div id="task-groups"></div>
+  <button class="completed-toggle" id="completed-toggle" aria-expanded="false" aria-controls="completed-list"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg><span id="completed-label">已完成</span></button>
+  <ul id="completed-list" hidden></ul>
+  <p class="sr-only" id="status" aria-live="polite"></p>
+</main>
+<nav class="footer" aria-label="任务视图">
+  <button class="nav-button" data-view="today" aria-pressed="true"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>今天</button>
+  <button class="nav-button" data-view="all" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8m-8 6h8"/></svg>全部</button>
+  <button class="add" id="add-task" aria-label="添加任务"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+</nav>
+<dialog id="editor" aria-labelledby="editor-heading">
+  <form id="task-form">
+    <div class="dialog-head"><h2 id="editor-heading">添加任务</h2><button type="button" class="close" id="close-editor" aria-label="关闭"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+    <label class="field">任务<textarea id="task-title" required maxlength="180" placeholder="想做些什么？"></textarea></label>
+    <div class="form-grid"><label class="field">日期<input id="task-date" type="date" required value="2026-10-25"></label><label class="field">清单<select id="task-category"><option value="work">工作与学习</option><option value="life">生活</option></select></label></div>
+    <label class="field">备注<input id="task-note" type="text" maxlength="120" placeholder="可选"></label>
+    <p class="error" id="form-error" role="alert" hidden></p>
+    <button class="save" type="submit">保存</button>
+  </form>
+</dialog>
+<div class="notice" id="notice" role="status"></div>
+<script>
+(() => {
+  'use strict';
+  const TODAY = '2026-10-25', KEY = 'aio-task-concept-minimal-v1';
+  const defaults = [
+    {id:'1',title:'整理本周计划',date:TODAY,category:'work',note:'先理清最重要的三件事',done:false},
+    {id:'2',title:'复习架构设计30分钟',date:TODAY,category:'work',note:'09:30 · 系统架构',done:false},
+    {id:'3',title:'完善任务管理交互',date:TODAY,category:'work',note:'AIO Life',done:false},
+    {id:'4',title:'买水果',date:TODAY,category:'life',note:'苹果、蓝莓',done:false},
+    {id:'5',title:'晚上散步',date:TODAY,category:'life',note:'20:00 · 让自己慢下来',done:false},
+    {id:'6',title:'喝一杯水',date:TODAY,category:'life',note:'',done:true},
+    {id:'7',title:'整理书桌',date:'2026-10-26',category:'life',note:'留给明天',done:false}
+  ];
+  let tasks = defaults.map(task => ({...task})), view = 'today', editingId = null, timer;
+  try {const stored = JSON.parse(localStorage.getItem(KEY));if (Array.isArray(stored) && stored.every(t => t && typeof t.id === 'string' && typeof t.title === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t.date) && ['work','life'].includes(t.category) && typeof t.note === 'string' && typeof t.done === 'boolean')) tasks = stored;} catch (_) {}
+  const el = id => document.getElementById(id);
+  const editor = el('editor');
+  function announce(message) {el('status').textContent = message;}
+  function persist() {try {localStorage.setItem(KEY,JSON.stringify(tasks));} catch (_) {showNotice('当前浏览器无法保存，刷新后将恢复示例');}}
+  function showNotice(message) {clearTimeout(timer);el('notice').textContent = message;timer = setTimeout(() => {el('notice').textContent = '';},3200);}
+  function taskRow(task) {
+    const li = document.createElement('li');li.className = 'task' + (task.done ? ' completed' : '');
+    const check = document.createElement('button');check.type = 'button';check.className = 'check';check.setAttribute('aria-label',(task.done ? '撤销完成：' : '完成：') + task.title);check.setAttribute('aria-pressed',String(task.done));
+    check.innerHTML = '<span class="circle">' + (task.done ? '<svg aria-hidden="true" viewBox="0 0 16 16"><path d="m3 8 3 3 7-7"/></svg>' : '') + '</span>';
+    check.addEventListener('click',() => {task.done = !task.done;persist();render();announce(task.done ? '已完成：' + task.title : '已恢复：' + task.title);if(task.done) el('completed-toggle').focus();});
+    const edit = document.createElement('button');edit.type = 'button';edit.className = 'task-edit';edit.setAttribute('aria-label','编辑：' + task.title);
+    const title = document.createElement('span');title.className = 'task-title';title.textContent = task.title;edit.append(title);
+    if(task.note || view === 'all') {const meta = document.createElement('span');meta.className = 'task-meta';if(view === 'all'){const date = document.createElement('span');date.className = 'time';date.textContent = task.date === TODAY ? '今天' : task.date.slice(5).replace('-','月') + '日';meta.append(date);}if(task.note){const note = document.createElement('span');note.textContent = task.note;meta.append(note);}edit.append(meta);}
+    edit.addEventListener('click',() => openEditor(task));li.append(check,edit);return li;
+  }
+  function render() {
+    const visible = tasks.filter(task => view === 'all' || task.date === TODAY), pending = visible.filter(task => !task.done), completed = visible.filter(task => task.done);
+    el('page-title').textContent = view === 'all' ? '全部任务' : '今天';el('remaining').textContent = pending.length ? pending.length + ' 件待办' : '都完成了';
+    const progress = visible.length ? Math.round(completed.length / visible.length * 100) : 0;el('progress-fill').style.width = progress + '%';document.querySelector('[role=progressbar]').setAttribute('aria-valuenow',String(progress));
+    const groups = el('task-groups');groups.replaceChildren();
+    if(!pending.length) {const empty = document.createElement('div');empty.className = 'empty';const strong = document.createElement('strong');strong.textContent = '给自己一点空闲';empty.append(strong,document.createTextNode('这一页的待办已经清空。'));groups.append(empty);}
+    for(const [key,label] of [['work','工作与学习'],['life','生活']]) {const rows = pending.filter(t => t.category === key);if(!rows.length)continue;const section = document.createElement('section');const heading = document.createElement('h2');heading.className = 'section-title';heading.textContent = label;const count = document.createElement('span');count.textContent = String(rows.length);heading.append(count);const ul = document.createElement('ul');rows.forEach(task => ul.append(taskRow(task)));section.append(heading,ul);groups.append(section);}
+    el('completed-label').textContent = '已完成 ' + completed.length;el('completed-toggle').hidden = !completed.length;el('completed-list').replaceChildren(...completed.map(taskRow));
+    document.querySelectorAll('[data-view]').forEach(button => button.setAttribute('aria-pressed',String(button.dataset.view === view)));
+  }
+  function openEditor(task) {editingId = task ? task.id : null;el('editor-heading').textContent = task ? '编辑任务' : '添加任务';el('task-title').value = task ? task.title : '';el('task-date').value = task ? task.date : TODAY;el('task-category').value = task ? task.category : 'work';el('task-note').value = task ? task.note : '';el('form-error').hidden = true;editor.showModal();el('task-title').focus();}
+  el('task-form').addEventListener('submit',event => {event.preventDefault();const title = el('task-title').value.trim();if(!title){el('form-error').textContent = '请写下要做的事情';el('form-error').hidden = false;el('task-title').focus();return;}const fields = {title,date:el('task-date').value,category:el('task-category').value,note:el('task-note').value.trim()};if(editingId){Object.assign(tasks.find(task => task.id === editingId),fields);}else{tasks.push({id:typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now().toString() + Math.random().toString(36),...fields,done:false});}persist();editor.close();if(view === 'today' && fields.date !== TODAY){view = 'all';showNotice('已保存，已切换到全部任务');}render();announce('任务已保存');});
+  el('add-task').addEventListener('click',() => openEditor());el('close-editor').addEventListener('click',() => editor.close());
+  el('completed-toggle').addEventListener('click',() => {const expanded = el('completed-toggle').getAttribute('aria-expanded') === 'true';el('completed-toggle').setAttribute('aria-expanded',String(!expanded));el('completed-list').hidden = expanded;});
+  document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click',() => {view = button.dataset.view;render();}));
+  render();
+})();
+</script>
+</body>
+</html>
