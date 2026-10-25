@@ -13,6 +13,10 @@ SPEC.loader.exec_module(contracts)
 
 
 class ContractGenerationTest(unittest.TestCase):
+    def test_export_download_grant_is_never_a_query_parameter(self):
+        self.assertEqual([], contracts.queries["/me/data-exports/{id}/download"])
+
+
     def collect_fixture(self, name, source):
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)

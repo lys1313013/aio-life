@@ -173,7 +173,7 @@ for p in sorted(base.rglob('*Controller.java')):
   if m['verb']!='GET':continue
   keys=[]
   for param in split_params(m['params']):
-   if '@PathVariable' in param:continue
+   if any(annotation in param for annotation in ('@PathVariable', '@RequestHeader', '@CookieValue', '@RequestAttribute', '@SessionAttribute')):continue
    q=re.search(r'CommonQuery<([\w.]+)>',param)
    if q:keys+=['page','pageSize']+names(q[1].split('.')[-1]);continue
    typed=re.search(r'(?:\b|\.)(\w+Query)\s+\w+\s*$',param)
