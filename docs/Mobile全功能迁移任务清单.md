@@ -22,7 +22,7 @@
 
 - Web 路由：`aio-life-front/apps/web-antd/src/router/routes/modules/`。
 - 实际菜单机制：`aio-life-front/apps/web-antd/src/router/access.ts` 使用后端菜单；静态路由不是完整的线上菜单清单。
-- 菜单种子：`aio-life-server/sql/2_ini_data/2_menu.sql`，以及微信读书、银行卡、操作日志与访问日志的增量 SQL。
+- 菜单种子：`aio-life-server/sql/menu/2_ini_data/2_menu.sql`，以及微信读书、银行卡、操作日志与访问日志的增量 SQL。
 - Web 业务页面：`aio-life-front/apps/web-antd/src/views/`。下文“Web 页面”均相对于此目录。
 - 个人设置：`aio-life-front/apps/web-antd/src/views/_core/profile/index.vue`。
 - Mobile 现状：`aio-life-mobile/src/pages.json`、`src/services/life-catalog.ts`、`src/services/navigation.ts`。
