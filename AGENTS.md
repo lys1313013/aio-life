@@ -1,5 +1,7 @@
 # AGENTS.md
 
+- 系统尚未正式上线，只维护当前数据结构和接口契约；不保留旧数据格式、旧客户端、旧参数或旧缓存的兼容分支，也不维护历史升级链。结构变更同步全量初始化、实体和两端调用方。
+
 AIO Life — All-in-One 人生管理系统。本仓库保存项目文档、编排配置和开发入口；Web、后端和移动端各自使用独立 Git 仓库。
 
 ## 沟通与工作方式
@@ -34,8 +36,8 @@ AIO Life — All-in-One 人生管理系统。本仓库保存项目文档、编�
 - 业务后端 HTTP 响应为 `{ code: 0, message: null, data: ... }`，成功码是整数 `0`；不能仅凭 HTTP 200 判断业务成功。独立 Query 服务及 MCP 工具的协议差异见 [API 参数规范](docs/API参数规范.md)和 [MCP 接口范围](docs/需求/MCP接口需求方案.md)，不能机械套用。
 - ID 全程使用 **string**，包括接口、路由、表单、组件 key、比较与提交；禁止转为数字，避免大整数精度丢失。
 - 后端未覆盖序列化器的 `Long/long` 响应字段默认输出字符串；`Integer/int` 输出数字。`PageResp.total` 使用字段级 `CountSerializer`，返回 `number | null`，不能仅凭字段名推断类型。
-- 前端类型按实际 JSON 声明。旧版字符串计数在读取边界解析，不能用真假值判断数量；TypeScript 类型断言不会转换运行时值。细节见 Web 规范“Long 响应与数值判断”。
-- 分页新请求统一使用 `page/pageSize`，页码从 1 开始，公共每页上限 200；业务接口可采用更小上限。旧 `current/size/get` 仅用于服务端兼容，客户端不得继续发送；需要完整列表时逐页获取，不能用超大页大小绕过分页。
+- 前端类型按实际 JSON 声明。按当前契约返回的字符串数值在读取边界解析，不能用真假值判断数量；TypeScript 类型断言不会转换运行时值。细节见 Web 规范“Long 响应与数值判断”。
+- 分页新请求统一使用 `page/pageSize`，页码从 1 开始，公共每页上限 200；业务接口可采用更小上限。请求仅使用规范参数名；需要完整列表时逐页获取，不能用超大页大小绕过分页。
 - 本地日期使用 `yyyy-MM-dd`，本地日期时间使用 `yyyy-MM-dd HH:mm:ss`；时迹的 `startTime/endTime` 仍为当天分钟数。请求必填、可空和范围限制以服务端 DTO 的有效校验为准，路径 ID 必须显式必填。完整约定见 [API 参数规范](docs/API参数规范.md)。
 - 请求 DTO 调整后运行 `python3 scripts/generate-api-contracts.py` 同步 Web、移动端类型与字段白名单，再运行 `python3 scripts/generate-api-contracts.py --check`；禁止手改生成文件。
 - 多仓库交付先在各仓库提交业务改动，再使用 `python3 scripts/push-repositories.py`：推送前自动生成并提交两端契约，所有仓库推送成功后才执行联合检查。不得以分别手动推送代替统一入口而漏同步；用户明确不测试时使用 `--skip-hooks`。入口不自动提交业务文件，前置条件和恢复方式见 [本地统一推送与联合检查](docs/API参数规范.md#本地统一推送与联合检查)。
@@ -138,7 +140,7 @@ mvn package -DskipTests          # 打包，跳过测试
 | `relationship` | Neo4j 人际关系图谱，通过 `AIO_LIFE_NEO4J_ENABLED` 开关控制 |
 | `mcp` | 自定义注解驱动的 MCP Tool 注册与认证 |
 
-LLM 会话、消息和模型密钥业务接口已移除；历史数据库表及数据保留。
+LLM 会话、消息和模型密钥业务接口、数据表及实体 Mapper 已移除。
 
 ### 数据与配置约束
 

@@ -4,7 +4,7 @@
 
 ## 来源与公共约定
 
-参照 Web `api/core/{income,expense,message,mcp,github,csdn,user-bind}.ts`、`api/{bank-card,relationship}/index.ts` 与对应 views；复杂契约核对后端 `IncomeController`、`ExpController`、各实体/query。收入实际主键为 `id`，兼容旧 Web `incomeId`，所有 ID 保留字符串。GET query 参数平铺；收入与支出无附件。复用 MobilePage/MobileButton/ConfirmAction/FormField/PageState/AdaptiveModal/MetricCard/LoadMore；页面上下拉刷新，局部提交失败保留表单。
+参照 Web `api/core/{income,expense,message,mcp,github,csdn,user-bind}.ts`、`api/{bank-card,relationship}/index.ts` 与对应 views；复杂契约核对后端 `IncomeController`、`ExpController`、各实体/query。收入主键仅使用 `id`，所有 ID 保留字符串。GET query 参数平铺；收入与支出无附件。复用 MobilePage/MobileButton/ConfirmAction/FormField/PageState/AdaptiveModal/MetricCard/LoadMore；页面上下拉刷新，局部提交失败保留表单。
 
 `services/domains/session-guard.ts` 在API完成后校验Token；`page-session.ts` 在 onShow 恢复session/登录检查并加载，在 onHide/onUnload 失效请求和清理业务数据。银行卡完整卡号、GitHub Token、聊天内容与账单预览离页清空；页面级请求代次阻止旧结果覆盖新状态。
 

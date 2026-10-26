@@ -9,7 +9,7 @@
 | API 参数、分页、日期、契约生成与统一推送 | [API 参数规范](API参数规范.md)、[接口最小信息契约](接口最小信息契约.md) |
 | 首页卡片目录、配置、刷新与操作 | [首页功能说明](首页功能说明.md)、[今日时迹卡片](今日时迹卡片设计.md)、[新增业务卡片](首页新增业务卡片需求.md) |
 | 图标与颜色唯一来源 | [图标与颜色统一规则](图标与颜色统一规则.md) |
-| 后端结构、迁移与兼容性 | [后端文档目录](../aio-life-server/docs/README.md)、[SQL 规范](../aio-life-server/docs/SQL脚本规范.md)、[数据库升级](../aio-life-server/docs/数据库升级验证.md) |
+| 后端结构与初始化 | [后端文档目录](../aio-life-server/docs/README.md)、[SQL 规范](../aio-life-server/docs/SQL脚本规范.md)、[数据库初始化](../aio-life-server/docs/数据库初始化与验证.md) |
 | Web 组件与开发说明 | [Web 文档目录](../aio-life-front/docs/README.md)、[Web 开发规范](../aio-life-front/AGENTS.md) |
 | 移动端启动、平台构建与验收 | [Mobile README](../aio-life-mobile/README.md)、[迁移与验收目录](mobile-migration/README.md) |
 | 只读查询服务 | [Query README](../aio-life-query/README.md)、[原始需求与现状对照](<需求/AIO Life Query 智能数据查询服务需求方案.md>) |
@@ -33,7 +33,7 @@
 | 个人数据导出 | [需求与技术方案](需求/个人数据导出需求与技术方案.md)（设计草案：Excel、权限、次数与审计） |
 | 通知渠道 | [微信订阅消息](微信小程序订阅消息接入.md)、[飞书通知](飞书通知渠道方案.md) |
 | MCP | [接口需求](需求/MCP接口需求方案.md)、[后端接入](../aio-life-server/docs/mcp/streamable-http.md) |
-| 视频封面 | [实施清单](视频封面内部存储实施清单.md)、[迁移操作](../aio-life-server/docs/视频封面迁移.md) |
+| 视频封面 | [实施清单](视频封面内部存储实施清单.md)、[初始化说明](../aio-life-server/docs/数据库初始化与验证.md) |
 | 阅读原型 | [开发需求](prototypes/weread/开发需求.md) |
 
 ## 迁移、审查与历史方案
