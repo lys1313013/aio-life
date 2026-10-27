@@ -78,6 +78,6 @@ OPERATION 的日期过滤和排序只使用 `request_time`，按请求时间与 
 
 ## 四 初始化与验证
 
-结构以[后端全量 SQL](../../../aio-life-server/sql/1_init_table/2026-08-18_init_all_tables.sql)为唯一来源，本目录的 [create-table.sql](create-table.sql) 仅为设计摘录。系统尚未上线，不维护旧库增量、历史回填、混合版本写入或回退兼容。
+结构以[后端全量 SQL](../../../aio-life-server/sql/1_init_table/2026-08-18_init_all_tables.sql)为唯一来源，本目录的 [create-table.sql](create-table.sql) 仅为设计摘录。后续结构变更同步全量 SQL 和已有库增量脚本，必要的数据转换在增量中说明；应用不保留混合版本写入或旧接口兼容分支。
 
 初始化、当前结构验证与只读预检见[数据库初始化与验证](../../../aio-life-server/docs/数据库初始化与验证.md)。权限、脱敏、时间边界、日志详情、导出及独立事务按[需求验收标准](../../需求/操作日志需求方案.md#八-验收标准)验证；没有本次执行证据时不能声称数据库或部署已验证。
