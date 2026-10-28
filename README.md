@@ -14,7 +14,7 @@ All-in-One 人生管理系统，围绕时迹、目标与待办，管理阅读、
 | [aio-life-query](https://github.com/lys1313013/aio-life-query) | Java 21、Hasura v3、MySQL Connector，只读查询 | [README](https://github.com/lys1313013/aio-life-query/blob/main/README.md) |
 | [aio-life-chrome-plugin](https://github.com/lys1313013/aio-life-chrome-plugin) | B 站进度、豆瓣书影与购物页面采集 | [README](https://github.com/lys1313013/aio-life-chrome-plugin/blob/main/README.md) |
 
-查找需求、API 契约、上线步骤与历史验收，先看[文档目录](docs/README.md)。跨仓库约定见 [AGENTS.md](AGENTS.md)。各端运行时版本以自身配置和 README 为准；数据库当前结构由全量基线与尚未合并的适用增量共同定义，执行顺序见[数据库初始化与验证](aio-life-server/docs/数据库初始化与验证.md)。
+查找需求、API 契约、上线步骤与历史验收，先看[文档目录](docs/README.md)。跨仓库约定见 [AGENTS.md](AGENTS.md)。各端运行时版本以自身配置和 README 为准；数据库当前结构由冻结基线与后续 Flyway 版本迁移共同定义，独立迁移入口及已有库接入流程见[数据库初始化与验证](aio-life-server/docs/数据库初始化与验证.md)。
 
 ## 初始化与启动
 
