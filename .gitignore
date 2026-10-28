@@ -8,6 +8,13 @@ build/
 *.log
 test-results/
 
+# 本机运行产物；需长期保留的设计、原型和验收证据归档到 docs/
+/artifacts/
+/output/
+/.superpowers/
+/.pai/skill-update/
+/.pnpm-store/
+
 # Web、后端和移动端是独立 Git 仓库，由 scripts/setup-repositories.sh 初始化
 /aio-life-front/
 /aio-life-server/
