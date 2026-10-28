@@ -520,7 +520,7 @@ H2、仅比较 SQL 字符串、仅观察 HTTP 超时，均不能替代以上端�
 - [角色权限实现](../../aio-life-server/src/main/java/top/aiolife/sso/service/impl/StpInterfaceImpl.java)
 - [API Key 认证](../../aio-life-server/src/main/java/top/aiolife/sso/interceptor/ApiKeyInterceptor.java)
 - [二级锁校验](../../aio-life-server/src/main/java/top/aiolife/sso/service/SecondaryLockGuard.java)
-- [业务锁映射](../../aio-life-server/src/main/java/top/aiolife/core/cache/SecondaryLockPolicy.java)
+- [业务锁映射](../../aio-life-server/src/main/java/top/aiolife/sso/service/SecondaryLockPolicy.java)
 - [MCP 工具执行](../../aio-life-server/src/main/java/top/aiolife/mcp/invoker/McpToolInvoker.java)
 - [时迹实体](../../aio-life-server/src/main/java/top/aiolife/record/pojo/entity/TimeRecordEntity.java)
 - [时迹分类业务口径](../../aio-life-server/src/main/java/top/aiolife/record/service/impl/TimeTrackerCategoryServiceImpl.java)

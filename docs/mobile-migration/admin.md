@@ -1,5 +1,7 @@
 # Mobile 分类与管理端操作盘点及实现
 
+字段名称已按 2026-10-28 [统一契约](../../aio-life-server/docs/数据库设计审查与字段规范.md#31-已实施的字段统一2026-10-28)同步；下文“本批结果与验证边界”仍为原批次记录，不代表当前验证。
+
 Web 证据：`views/time/time-tracker/{category-config,admin}`、`views/config-management/{sysDictType,sysDictData}`、`views/system/{user,menu,user-dict,feedback,config,operation-log,access-log}`，及相应 `api/core`、`api/system`；后端 Controller 再核对管理员角色、排序、批量 action。
 
 | 任务 | 操作与字段 | 原生入口 / API |
@@ -7,7 +9,7 @@ Web 证据：`views/time/time-tracker/{category-config,admin}`、`views/config-m
 | TIME-03 | 列表、父子展开、个人新增/编辑/删除、公共覆盖、隐藏/恢复、卡片统计、同级排序；父分类、名称、颜色、图标、描述、时间类型 | `/pages/categories/index`；`/timeTrackerCategory/list,hidden`，POST/PUT 根资源，DELETE /{id}，POST /reSort |
 | TIME-04 | 公共分类 CRUD、启用、统计、子分类、排序、图标颜色、描述、时间类型 | `/pages/categories/index?admin=1`；`/timeTrackerCategory/admin/list` 和 POST /admin、PUT/DELETE /admin/{id} |
 | CONFIG-01 | 字典类型查询/分页、新增/编辑/删除；dictName/dictType/remark | `/pages/admin/index?kind=dict-types`；`/sysDictType/query`，POST 根资源，PUT/DELETE /{dictId} |
-| CONFIG-02 | 字典数据类型/名称筛选、分页、CRUD；dictId/dictValue/dictLabel/dictSort/remark，状态展示 | `kind=dict-data`；`/sysDictData/query`，POST 根资源，PUT/DELETE /{dictCode} |
+| CONFIG-02 | 字典数据类型/名称筛选、分页、CRUD；dictId/dictValue/dictLabel/sortOrder/remark，状态展示 | `kind=dict-data`；`/sysDictData/query`，POST 根资源，PUT/DELETE /{dictCode} |
 | ADMIN-01 | 用户关键词/分页、CRUD；username/nickname/role/email，在线与最近活动展示 | `kind=users`；`/user-center/list`，POST/PUT 根资源，DELETE /{id} |
 | ADMIN-02 | 菜单树、展开、搜索、CRUD、子菜单、排序和启用；name/path/parentId/component/redirect/roles/meta/title/icon，保留未知 meta；保护 /system、/system/menu | `kind=menus`；`/menu/admin/tree,role-options`、POST /admin、PUT/DELETE /admin/{id}、PUT /{id}/status,sort |
 | ADMIN-03 | 基础字典类型/名称/状态筛选、分页、CRUD、只读、图标颜色、同类型相邻排序；只编辑 userId=0 | `kind=user-dict`；`/userDictData/admin/query`、POST /admin、PUT/DELETE /admin/{id}、POST /admin/reSort；`/userDictType/dictTypeEnum` |
