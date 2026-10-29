@@ -19,7 +19,7 @@ AIO Life — All-in-One 人生管理系统。本仓库保存项目文档、编�
 | 路径 | 职责与技术 | 详细规范 |
 | --- | --- | --- |
 | `aio-life-front/` | Web：Vue Vben Admin v5.5.9、Ant Design Vue、pnpm monorepo、Turborepo | [Web AGENTS.md](aio-life-front/AGENTS.md) |
-| `aio-life-server/` | 后端：Spring Boot 3.5.16、Java 21、MyBatis Plus、MySQL（117 库为 5.7.44）、Redis、Sa-Token、MinIO | [Server AGENTS.md](aio-life-server/AGENTS.md) |
+| `aio-life-server/` | 后端：Spring Boot 3.5.16、Java 21、MyBatis Plus、MySQL 8.x（最低 8.0.16）、Redis、Sa-Token、MinIO | [Server AGENTS.md](aio-life-server/AGENTS.md) |
 | `aio-life-mobile/` | 移动端：uni-app x Vapor，入口 `src/main.ts`，`.uvue` 页面与组合式 API | [Mobile AGENTS.md](aio-life-mobile/AGENTS.md) |
 | `docs/` | 需求与技术方案 | 数据库表结构见 [数据库表结构.md](aio-life-server/docs/数据库表结构.md) |
 
@@ -145,7 +145,7 @@ LLM 会话、消息和模型密钥业务接口、数据表及实体 Mapper 已�
 
 ### 数据与配置约束
 
-- SQL 脚本遵循 [SQL 脚本规范](aio-life-server/docs/SQL脚本规范.md)：表及每个字段必须有中文 `COMMENT`，包括 ID、版本、审计和逻辑删除字段；索引、约束及迁移执行条件必须说明。 新库和增量统一兼容 MySQL 5.7.44 与 8.x（最低 8.0.16），CI 覆盖 5.7.44 / 8.0.40 / 8.4.2；不得只在测试中改写 SQL 来模拟兼容，5.7 不具备 CHECK 执行保障。
+- SQL 脚本遵循 [SQL 脚本规范](aio-life-server/docs/SQL脚本规范.md)：表及每个字段必须有中文 `COMMENT`，包括 ID、版本、审计和逻辑删除字段；索引、约束及迁移执行条件必须说明。 新库和增量仅支持 MySQL 8.x（最低 8.0.16），CI 覆盖 8.0.40 / 8.4.2，不再维护 MySQL 5.x 兼容代码或测试；不得只在测试中改写 SQL 来模拟兼容。
 - 数据库迁移通过后端 `mvn -f tools/flyway/pom.xml compile flyway:migrate` 独立运行 Flyway，不在应用启动时自动执行。新库、已有库首次接入、后续升级和只读结构预检统一遵循[数据库初始化与验证](aio-life-server/docs/数据库初始化与验证.md)；不得对未知结构直接登记基线或跳过失败迁移。
 - 当前仅有 117 上的一个已有业务库，已按用户确认登记 Flyway 基线 `20261028.06`；该版本及之前的现有 SQL 不得重跑，未来只新增更高版本 V。SQL 执行文件统一放在后端 `sql/migrations/`，不另设历史兼容脚本目录。实际结构差异单独预检和跟踪，不把历史登记视为结构完全一致。
 - MySQL 业务访问统一使用 MyBatis-Plus / MyBatis Mapper。禁止生产业务代码使用 `JdbcTemplate`、`NamedParameterJdbcTemplate`、`JdbcClient` 或直接 JDBC；禁止在 Service / Guard 内嵌 SQL。联表、行锁、特殊更新放入 Mapper；规则与自动检查见 Server 规范“数据库访问规范（强制）”。
