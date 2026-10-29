@@ -83,6 +83,19 @@ ln -s "$(pwd)/skills/aio-life-api" "${CODEX_HOME:-$HOME/.codex}/skills/aio-life-
 
 在本地 `.env` 中补齐后端配置，再使用 `docker compose up -d`。依赖地址必须能从容器访问，不能直接照抄示例中的 `localhost`；镜像仓库需要相应拉取权限。部署时将管理端口 `45679` 限制在受信网络，具体镜像构建和发布步骤见各端 README。
 
+### 可选接入 SkyWalking
+
+后端两条镜像构建路径均内置固定版本的完整 Java Agent，默认不加载。发布并拉取包含此改动的镜像、启动 SkyWalking 后，使用 [docker-compose.skywalking.yml](docker-compose.skywalking.yml) 启用 Agent：
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.skywalking.yml pull backend
+docker compose -f docker-compose.yml -f docker-compose.skywalking.yml up -d --no-deps backend
+```
+
+这会重建后端容器。配置默认使用已有的 `skywalking_default` 网络、`skywalking-oap:11800` 采集地址和 `aio-life-server` 服务名；可在 `.env` 覆盖 `SKYWALKING_NETWORK`、`SW_AGENT_COLLECTOR_BACKEND_SERVICES`、`SW_AGENT_NAME`。它保留原 `aio-life` 网络，并将 `JAVA_TOOL_OPTIONS` 与 Agent 参数合并；已有该变量时不要重复填写同一个 `-javaagent`。`SW_AGENT_SAMPLE=-1` 表示不限制每三秒采样数量；OAP 也须设置为 100% 采样，7 天保留期在存储端设置。
+
+Agent 已在镜像内，无需宿主机目录挂载。启用后的更新继续使用上述两份 Compose 文件；停用时运行 `docker compose -f docker-compose.yml up -d --no-deps backend`，并确保 `.env` 没有另行设置 Agent 启动参数。基础部署不依赖 SkyWalking 网络。日志关联及验证方法见[后端部署说明](aio-life-server/README.md#skywalking-java-agent)。
+
 ## 更新与交付
 
 ```bash
