@@ -1,0 +1,4 @@
+interface:
+  display_name: "AIO Life 接口助手"
+  short_description: "按需发现 AIO Life 接口，读取契约并完成授权范围内的数据查询与操作"
+  default_prompt: "使用 $aio-life-api 查询我正在进行的目标，并根据实际接口结果给出简洁汇总。"

@@ -64,6 +64,19 @@ npm run dev
 
 敏感配置通过 `AIO_LIFE_*` 环境变量注入。Maven 不自动加载 `.env`；根目录 [.env.example](.env.example) 仅为配置参考，完整必填项见后端 README。移动端 `VITE_*` 配置会进入客户端包，不能存放密钥；真机访问开发后端需使用设备可达的地址。微信上传、App 工具链及平台验证见各端 README。
 
+## AI Skill
+
+[AIO Life API Skill](skills/aio-life-api/SKILL.md) 在本仓库统一维护，通过在线契约渐进式发现并调用接口。只保存通用规则、公开接口信息和 UI 元数据；Token、私有服务地址、个人业务数据与本机配置均留在仓库外，通过运行环境提供。
+
+本地使用符号链接引用项目版本，无需复制或同步文件。在主仓库目录首次安装：
+
+```bash
+mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
+ln -s "$(pwd)/skills/aio-life-api" "${CODEX_HOME:-$HOME/.codex}/skills/aio-life-api"
+```
+
+已有同名目录时先核对并迁移其中需要保留的通用内容，再替换为符号链接，不强制覆盖。以后只编辑仓库内版本；移动项目目录后需更新本地链接。凭据通过 `AIO_LIFE_API_TOKEN` 提供，私有部署地址通过 `AIO_LIFE_API_BASE_URL` 提供，不写入 Skill。
+
 ## 镜像编排
 
 根目录 [docker-compose.yml](docker-compose.yml) 运行已发布的 Web 和后端镜像，Web 映射到 `8080`，后端映射到 `45678` 和 `45679`。它不从本地源码构建，也不包含 MySQL、Redis、MinIO 或数据库初始化；依赖服务和库结构须先准备完成。
@@ -114,6 +127,7 @@ aio-life/
 ├── aio-life-mobile/         # 独立移动端仓库
 ├── aio-life-query/          # 可选只读查询服务，单独克隆
 ├── aio-life-chrome-plugin/  # 可选浏览器插件，单独克隆
+├── skills/aio-life-api/    # API Skill 唯一维护源，本地通过符号链接引用
 ├── docs/                   # 跨端需求、方案与历史记录
 │   ├── design/             # 设计稿、设计说明与生成提示词
 │   ├── prototypes/         # 交互原型及配套预览
