@@ -1,3 +1,6 @@
+# 后端镜像已内置完整 SkyWalking Agent，本文件默认加载 Agent。
+# 先启动 SkyWalking，确保外部网络 skywalking_default 和 OAP 已就绪。
+# 常规部署使用 docker compose pull && docker compose up -d，无需叠加配置文件。
 services:
   backend:
     image: crpi-yvha9coypdedaafa.cn-beijing.personal.cr.aliyuncs.com/lys1313013/aio-life-server:latest
@@ -8,8 +11,20 @@ services:
       - "45679:45679"
     env_file:
       - .env
+    environment:
+      # 保留 .env 中已有的 JVM 附加参数；不要在 JAVA_TOOL_OPTIONS 中重复添加此 Agent。
+      JAVA_TOOL_OPTIONS: "${JAVA_TOOL_OPTIONS:-} -javaagent:/opt/skywalking-agent/skywalking-agent.jar"
+      # SkyWalking 控制台显示的服务名。
+      SW_AGENT_NAME: "${SW_AGENT_NAME:-aio-life-server}"
+      # 使用 Docker 网络中的 OAP 地址；容器内 127.0.0.1 指向后端自身。
+      SW_AGENT_COLLECTOR_BACKEND_SERVICES: "${SW_AGENT_COLLECTOR_BACKEND_SERVICES:-skywalking-oap:11800}"
+      # -1 不限制每三秒采样数量，即 100% 采样；7 天保留期在 OAP/BanyanDB 配置。
+      SW_AGENT_SAMPLE: "-1"
+      # Agent 日志输出到 docker logs，不写入镜像内的 Agent 目录。
+      SW_LOGGING_OUTPUT: CONSOLE
     networks:
       - aio-life
+      - skywalking
 
   frontend:
     image: crpi-yvha9coypdedaafa.cn-beijing.personal.cr.aliyuncs.com/lys1313013/aio-life-front:latest
@@ -25,3 +40,7 @@ services:
 networks:
   aio-life:
     name: aio-life
+  # 复用 SkyWalking 部署创建的网络，不由 AIO Life 创建或删除。
+  skywalking:
+    external: true
+    name: "${SKYWALKING_NETWORK:-skywalking_default}"
