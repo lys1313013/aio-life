@@ -142,8 +142,8 @@ aio-life/
 ├── aio-life-chrome-plugin/  # 可选浏览器插件，单独克隆
 ├── skills/aio-life-api/    # API Skill 唯一维护源，本地通过符号链接引用
 ├── docs/                   # 跨端需求、方案与历史记录
-│   ├── design/             # 设计稿、设计说明与生成提示词
-│   ├── prototypes/         # 交互原型及配套预览
+│   ├── design/             # 技术设计与待实施方案
+│   ├── prototypes/         # 当前页面参考与原型维护约定
 │   └── reviews/            # 按日期归档的审查与验收证据
 └── scripts/                # 初始化、更新、契约生成与统一推送
 ```
