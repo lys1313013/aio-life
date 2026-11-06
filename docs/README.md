@@ -36,7 +36,7 @@
 | 通知渠道 | [微信订阅消息](微信小程序订阅消息接入.md)、[飞书通知](飞书通知渠道方案.md) |
 | MCP | [接口需求](需求/MCP接口需求方案.md)、[后端接入](../aio-life-server/docs/mcp/streamable-http.md) |
 | 视频封面 | [实施清单](视频封面内部存储实施清单.md)、[初始化说明](../aio-life-server/docs/数据库初始化与验证.md) |
-| 微信读书 | [当前实现入口](prototypes/weread/开发需求.md) |
+| 微信读书 | [当前实现入口](prototypes/weread/开发需求.md)、[首页阅读统计卡片](首页微信读书阅读统计卡片需求.md) |
 
 ## 迁移、审查与历史方案
 
