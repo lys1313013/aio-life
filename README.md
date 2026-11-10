@@ -9,9 +9,9 @@ All-in-One 人生管理系统，围绕时迹、目标与待办，管理阅读、
 | 仓库 | 职责 | 开发入口 |
 | --- | --- | --- |
 | [aio-life-front](https://github.com/lys1313013/aio-life-front) | Web 客户端：Vue Vben Admin、Ant Design Vue、pnpm monorepo | [README](https://github.com/lys1313013/aio-life-front/blob/main/README.md)、[开发规范](https://github.com/lys1313013/aio-life-front/blob/main/AGENTS.md) |
-| [aio-life-server](https://github.com/lys1313013/aio-life-server) | 统一业务 API：Spring Boot、Java 21、MyBatis-Plus、MySQL、Redis、MinIO | [README](https://github.com/lys1313013/aio-life-server/blob/main/README.md)、[开发规范](https://github.com/lys1313013/aio-life-server/blob/main/AGENTS.md) |
+| [aio-life-server](https://github.com/lys1313013/aio-life-server) | 统一业务 API：Spring Boot、Java 21、MyBatis-Plus、PostgreSQL、Redis、MinIO | [README](https://github.com/lys1313013/aio-life-server/blob/main/README.md)、[开发规范](https://github.com/lys1313013/aio-life-server/blob/main/AGENTS.md) |
 | [aio-life-mobile](https://github.com/lys1313013/aio-life-mobile) | uni-app x Vapor，H5、微信小程序与 App | [README](https://github.com/lys1313013/aio-life-mobile/blob/main/README.md)、[开发规范](https://github.com/lys1313013/aio-life-mobile/blob/main/AGENTS.md) |
-| [aio-life-query](https://github.com/lys1313013/aio-life-query) | Java 21、Hasura v3、MySQL Connector，只读查询 | [README](https://github.com/lys1313013/aio-life-query/blob/main/README.md) |
+| [aio-life-query](https://github.com/lys1313013/aio-life-query) | Java 21、Hasura v3、PostgreSQL Connector，只读查询 | [README](https://github.com/lys1313013/aio-life-query/blob/main/README.md) |
 | [aio-life-chrome-plugin](https://github.com/lys1313013/aio-life-chrome-plugin) | B 站进度、豆瓣书影与购物页面采集 | [README](https://github.com/lys1313013/aio-life-chrome-plugin/blob/main/README.md) |
 
 查找需求、API 契约、上线步骤与历史验收，先看[文档目录](docs/README.md)。跨仓库约定见 [AGENTS.md](AGENTS.md)。各端运行时版本以自身配置和 README 为准；数据库当前结构由冻结基线与后续 Flyway 版本迁移共同定义，独立迁移入口及已有库接入流程见[数据库初始化与验证](aio-life-server/docs/数据库初始化与验证.md)。
@@ -79,7 +79,7 @@ ln -s "$(pwd)/skills/aio-life-api" "${CODEX_HOME:-$HOME/.codex}/skills/aio-life-
 
 ## 镜像编排
 
-根目录 [docker-compose.yml](docker-compose.yml) 运行已发布的 Web 和后端镜像，Web 映射到 `8080`，后端映射到 `45678` 和 `45679`。它不从本地源码构建，也不包含 MySQL、Redis、MinIO 或数据库初始化；依赖服务和库结构须先准备完成。
+根目录 [docker-compose.yml](docker-compose.yml) 运行已发布的 Web 和后端镜像，Web 映射到 `8080`，后端映射到 `45678` 和 `45679`。它不从本地源码构建，也不包含 PostgreSQL、Redis、MinIO 或数据库初始化；依赖服务和库结构须先准备完成。
 
 在本地 `.env` 中补齐后端配置，再使用 `docker compose up -d`。依赖地址必须能从容器访问，不能直接照抄示例中的 `localhost`；镜像仓库需要相应拉取权限。部署时将管理端口 `45679` 限制在受信网络，具体镜像构建和发布步骤见各端 README。
 

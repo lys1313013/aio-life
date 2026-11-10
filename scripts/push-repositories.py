@@ -11,7 +11,9 @@ CLIENTS = {
     "aio-life-front": "apps/web-antd/src/api/payload.ts",
     "aio-life-mobile": "src/services/api-payload.ts",
 }
-REPOSITORIES = ("aio-life-server", *CLIENTS, ".")
+# Query 独立维护；本地有该仓库时纳入同一轮推送与远端版本核对。
+QUERY_REPOSITORIES = ("aio-life-query",) if (ROOT / "aio-life-query/.git").exists() else ()
+REPOSITORIES = ("aio-life-server", *QUERY_REPOSITORIES, *CLIENTS, ".")
 AUTOMATION = (
     "scripts/generate-api-contracts.py", "scripts/push-repositories.py",
     ".github/workflows/api-contracts.yml",
@@ -69,7 +71,7 @@ def main():
         if remote != revision:
             raise SystemExit(f"{repo}: remote main changed during delivery; rerun before requesting the joint check.")
 
-    # All three business repositories (and this generator) are now on the remote.
+    # Every selected repository is now on the remote; request the DTO contract check.
     run(sys.executable, str(ROOT / "scripts/generate-api-contracts.py"), "--check")
     run("gh", "workflow", "run", "api-contracts.yml", "--repo", "lys1313013/aio-life", "--ref", "main",
         "-f", f"generator_sha={revisions['.']}",
