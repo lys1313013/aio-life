@@ -22,7 +22,7 @@
 
 - Web 路由：`aio-life-front/apps/web-antd/src/router/routes/modules/`。
 - 实际菜单机制：`aio-life-front/apps/web-antd/src/router/access.ts` 使用后端菜单；静态路由不是完整的线上菜单清单。
-- 菜单种子现已纳入 `aio-life-server/sql/migrations/` 的 Flyway 版本迁移，基础菜单为 `V20261028_05_001__base_menu.sql`；初始化与升级统一使用[后端迁移入口](../aio-life-server/docs/数据库初始化与验证.md)。此路径调整不改变下文历史迁移验收记录。
+- 菜单种子现已纳入 `aio-life-server/sql/migrations/` 的 Flyway 版本迁移，公共菜单为 `V20261110_02_006__menus.sql`；初始化与升级统一使用[后端迁移入口](../aio-life-server/docs/数据库初始化与验证.md)。此路径调整不改变下文历史迁移验收记录。
 - Web 业务页面：`aio-life-front/apps/web-antd/src/views/`。下文“Web 页面”均相对于此目录。
 - 个人设置：`aio-life-front/apps/web-antd/src/views/_core/profile/index.vue`。
 - Mobile 现状：`aio-life-mobile/src/pages.json`、`src/services/life-catalog.ts`、`src/services/navigation.ts`。

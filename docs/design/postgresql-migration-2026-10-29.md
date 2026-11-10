@@ -8,7 +8,7 @@
 
 目标是将 AIO Life 的关系型业务存储统一迁移至 PostgreSQL，保留 Spring Boot、MyBatis-Plus、独立 Flyway 工具及 Hasura v3/DDN 查询架构。应用最终只支持 PostgreSQL，不维护长期双库分支、双写或旧客户端兼容层。
 
-建议以 PostgreSQL 18 作为目标大版本；实施时锁定当时受支持的补丁版本与镜像 digest，并验证 pgJDBC、Flyway、Druid 和所选 Hasura Connector 的组合。当前官方资料确认 PostgreSQL 18 受支持、Flyway 提供 PostgreSQL 模块，MyBatis-Plus 提供 PostgreSQL 方言；这些资料不等于项目已完成联调。[版本政策](https://www.postgresql.org/support/versioning/)、[Flyway PostgreSQL](https://documentation.red-gate.com/flyway/reference/database-driver-reference/postgresql-database)、[MyBatis-Plus 支持范围](https://baomidou.com/introduce/)。
+建议以 PostgreSQL 18 作为目标大版本；实施时锁定当时受支持的补丁版本与镜像 digest，并验证 pgJDBC、Flyway、Druid 和所选 Hasura Connector 的组合。当前官方资料确认 PostgreSQL 18 受支持、Flyway 提供 PostgreSQL 模块，MyBatis-Plus 提供 PostgreSQL 方言；这些资料不等于项目已完成联调。[版本政策](https://www.postgresql.org/support/versioning/)、[Flyway PostgreSQL](https://documentation.red-gate.com/flyway/reference/database-driver-reference/seed-split-database)、[MyBatis-Plus 支持范围](https://baomidou.com/introduce/)。
 
 采用“隔离开发与迁移演练 → 业务停写 → 一次性复制 → 对账与验收 → 切换”的路线。停写时长必须由实际数据规模和演练测量确定；本轮没有业务库数据，不能给出可靠分钟数。如果演练时长超过可接受窗口，再单独设计 CDC，不预先引入双写复杂度。
 
@@ -121,6 +121,8 @@ MySQL utf8mb4_unicode_ci、ascii_bin、utf8mb4_bin 不存在可机械替换的�
 [PostgreSQL collation 说明](https://www.postgresql.org/docs/18/collation.html)。
 
 ## 5. Flyway 与历史脚本的衔接
+
+> 2026-11-10 维护说明：下文保留当时的目录方案。当前工作树已清理全部旧 MySQL SQL，不再保留根层或分类归档副本；历史来源通过 Git 追溯。当前执行目录已统一为 `sql/migrations/`，规则见[数据库初始化与验证](../../aio-life-server/docs/数据库初始化与验证.md)。
 
 MySQL 到 PostgreSQL 是跨引擎数据搬迁，不能写一个 ALTER 脚本在原库内“升级为 PostgreSQL”。两个数据库必须有独立且真实的迁移历史。
 

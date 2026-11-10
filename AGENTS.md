@@ -148,7 +148,7 @@ LLM 会话、消息和模型密钥业务接口、数据表及实体 Mapper 已�
 
 - SQL 脚本遵循 [SQL 脚本规范](aio-life-server/docs/SQL脚本规范.md)：表及每个字段必须有中文 `COMMENT`，包括 ID、版本、审计和逻辑删除字段；索引、约束及迁移执行条件必须说明。 新库、增量和业务运行仅支持 PostgreSQL 18+，CI 使用真实 PostgreSQL，不维护 MySQL 兼容实现。
 - 数据库迁移通过后端 `mvn -f tools/flyway/pom.xml compile flyway:migrate` 独立运行 Flyway，不在应用启动时自动执行。新库、已有库首次接入、后续升级和只读结构预检统一遵循[数据库初始化与验证](aio-life-server/docs/数据库初始化与验证.md)；不得对未知结构直接登记基线或跳过失败迁移。
-- 当前业务库使用 PostgreSQL；MySQL 原库仅作为迁移保留源，不再由应用访问。PostgreSQL 执行文件放在后端 `sql/migrations/postgresql/`，旧 MySQL 文件冻结保留但不被当前 Flyway 入口发现。
+- 当前业务库使用 PostgreSQL；MySQL 原库仅作为迁移保留源，不再由应用访问。PostgreSQL 执行文件放在后端 `sql/migrations/`，旧 MySQL 结构、数据及历史修正 SQL 均不保留在工作树中，仅通过 Git 历史追溯；当前 SQL 只维护 PostgreSQL；日常不改写已执行的 PostgreSQL 迁移；本次聚合公共种子拆分须按后端指南显式校验并转换旧账本，不重放种子。
 - PostgreSQL 业务访问统一使用 MyBatis-Plus / MyBatis Mapper。禁止生产业务代码使用 `JdbcTemplate`、`NamedParameterJdbcTemplate`、`JdbcClient` 或直接 JDBC；禁止在 Service / Guard 内嵌 SQL。联表、行锁、特殊更新放入 Mapper；规则与自动检查见 Server 规范“数据库访问规范（强制）”。
 - 逻辑删除使用全局配置字段 `is_deleted`；对象映射使用 MapStruct，Lombok 配合 `lombok-mapstruct-binding`。
 - 数据库、Redis、MinIO、邮件等敏感配置通过 `AIO_LIFE_*` 环境变量注入。
