@@ -41,8 +41,8 @@ AIO Life — All-in-One 人生管理系统。本仓库保存项目文档、编�
 - 前端类型按实际 JSON 声明。按当前契约返回的字符串数值在读取边界解析，不能用真假值判断数量；TypeScript 类型断言不会转换运行时值。细节见 Web 规范“Long 响应与数值判断”。
 - 分页新请求统一使用 `page/pageSize`，页码从 1 开始，公共每页上限 200；业务接口可采用更小上限。请求仅使用规范参数名；需要完整列表时逐页获取，不能用超大页大小绕过分页。
 - 本地日期使用 `yyyy-MM-dd`，本地日期时间使用 `yyyy-MM-dd HH:mm:ss`；时迹的 `startTime/endTime` 仍为当天分钟数。请求必填、可空和范围限制以服务端 DTO 的有效校验为准，路径 ID 必须显式必填。完整约定见 [API 参数规范](docs/API参数规范.md)。
-- 请求 DTO 调整后运行 `python3 scripts/generate-api-contracts.py` 同步 Web、移动端类型与字段白名单，再运行 `python3 scripts/generate-api-contracts.py --check`；禁止手改生成文件。
-- 多仓库交付先在各仓库提交业务改动，再使用 `python3 scripts/push-repositories.py`：推送前自动生成并提交两端契约，所有仓库推送成功后才执行联合检查。不得以分别手动推送代替统一入口而漏同步；用户明确不测试时使用 `--skip-hooks`。入口不自动提交业务文件，前置条件和恢复方式见 [本地统一推送与联合检查](docs/API参数规范.md#本地统一推送与联合检查)。
+- 请求 DTO 或 GET 查询参数调整后，按[契约生成与验证](docs/API参数规范.md#契约生成与验证)同步并检查 Web、移动端类型与字段白名单；禁止手改生成文件。
+- 多仓库交付必须使用[本地统一推送与联合检查](docs/API参数规范.md#本地统一推送与联合检查)，不得以分别手动推送代替统一入口。参与仓库、前置条件、跳过 hooks 和失败恢复规则只在该入口维护。
 
 ## Web 与移动端共同 UI 规范
 
@@ -66,91 +66,16 @@ AIO Life — All-in-One 人生管理系统。本仓库保存项目文档、编�
 - 修改相关布局时，对比 loading、有内容、空态、错误重试和已有内容刷新时的区域高度及后续内容位置；覆盖空数据、单条、多条、长文本、三类视口及深浅主题。
 - 具体实现和动态验收见 Web、Mobile 规范的“Loading 高度与布局稳定（必须遵守）”。
 
-## Web — aio-life-front
+## 各端实现与验证入口
 
-```bash
-cd aio-life-front
-pnpm run dev:antd       # 启动 web-antd 开发服务器
-pnpm run dev            # monorepo 开发入口
-pnpm run build          # 生产构建
-pnpm run lint           # 代码检查
-pnpm run format         # 格式化
-pnpm run test:unit      # Vitest 单元测试
-pnpm run check          # 循环依赖、依赖、类型、拼写检查
-```
+各端命令、工具链、测试策略和实现细节由所属仓库维护，须在对应仓库执行；本页不复制命令和平台预算。
 
-- 别名 `#` 指向 `apps/web-antd/src/`。
-- 架构、请求客户端、附件、路由权限及界面实现细节见 Web `AGENTS.md`。
-
-## 移动端 — aio-life-mobile
-
-```bash
-cd aio-life-mobile
-npm ci
-npm run dev            # H5 预览：5180，代理本地后端 45678
-npm run build          # H5 构建
-npm run build:weixin   # 微信构建及包体检查
-npm test               # 单元与 API 契约等检查
-npm run test:e2e       # H5 登录与布局测试
-npm run test:commit    # 提交前统一验证
-```
-
-### 开发与验证
-
-- 页面开发和调整先查看现有 Web 实现，以业务逻辑、接口契约、信息层级及操作入口为基准，再适配移动端；具体对照验收见 Mobile 规范。
-- 保持 uni-app x Vapor；App 使用匹配版本的 HBuilderX，版本要求与验证边界见移动仓库 README。
-- 开发过程中按需验证，不默认运行全量测试或双端构建。准备提交最终改动时执行一次 `npm run test:commit`；纯文档、注释修改按 Mobile 规范只检查差异。
-- `test:commit` 包含单元检查、完整 H5 E2E、微信构建与包体检查；E2E 已包含 H5 构建，不额外重复构建。同一代码与相关环境未变时不重复已通过检查；修复后只重跑受影响阶段，影响不明确时重新全量验证。执行与日志规则见 Mobile 规范“测试执行时机与成本”。
-- 分别报告 H5、微信编译、模拟器、真机、App 和发布结果；上传成功不代表体验版、审核通过或正式发布。
-
-### 分页与样式
-
-- 滚动列表统一触底自动加载下一页，禁止常驻“继续加载 / 加载更多 / 下一页”按钮。`MobilePage` 监听 `reachbottom`，自有 `scroll-view` 监听 `scrolltolower`；公共 `LoadMore` 只展示加载状态和失败重试。
-- 请求中不重复分页；刷新、筛选、离页后的旧响应不得覆盖新状态；到末页或返回空页时停止。分页失败保留列表和页码，在底部重试失败页，不重置到第一页；验证实际滚动触发、去重、末页停止和失败恢复。
-- 间距唯一来源为 `src/styles/spacing.json`，页面和组件引用生成的 SCSS 变量或公共类，禁止复制数值。页面边距只有一个所有者，避免 `MobilePage` 与业务页重复 padding。
-- 排版唯一来源为 `src/styles/typography.json`，使用语义角色，禁止业务页另建字号等数值配置。生成与验收规则见 Mobile 规范“统一间距与视觉验收”和“统一排版”。
-
-### 微信包体
-
-- 主包工程预算 **1800 KB**，每包硬上限 **2048 KB**。预算与重量依赖归属统一维护在 `scripts/weixin-package-policy.json`。
-- 业务专属服务、解析器、资源和重量 npm 依赖必须归入对应分包，不能只登记页面分包而把依赖留在公共目录。共享小工具独立提取，禁止跨业务分包同步导入。
-- 排查读取 `artifacts/weixin-size/` 的文件与模块体积报告；不能通过上调预算、删除检查或业务功能、关闭 Vapor 绕过限制。具体机制见 Mobile 规范“避免主包再次超限”。
-
-## 后端 — aio-life-server
-
-```bash
-cd aio-life-server
-mvn spring-boot:run              # API：45678，context-path /api
-mvn test                         # 测试
-mvn package -DskipTests          # 打包，跳过测试
-```
-
-管理端点运行在 **45679**（Prometheus、Health、Info）；日志含 `traceId` / `spanId`（Micrometer + Brave）。
-
-### 业务模块
-
-源码包结构为 `top.aiolife.<module>`，按业务领域垂直拆分：
-
-| 模块 | 职责 |
+| 端 | 现行入口与必须关注的规则 |
 | --- | --- |
-| `sso` | Sa-Token JWT + Redis 认证、邮件验证码、用户绑定 |
-| `system` | 用户、菜单、字典 |
-| `record` | 时迹、目标、待办、理财、荣誉、备忘、通知及 LeetCode/CSDN/GitHub 同步 |
-| `wardrobe` | 衣柜管理 |
-| `membership` | 会员记录与统计 |
-| `feedback` | 反馈提交、评论和管理端处理 |
-| `relationship` | Neo4j 人际关系图谱，通过 `AIO_LIFE_NEO4J_ENABLED` 开关控制 |
-| `mcp` | 自定义注解驱动的 MCP Tool 注册与认证 |
+| Web | [README](aio-life-front/README.md)、[开发规范](aio-life-front/AGENTS.md)：请求客户端、类型边界、附件、路由权限及界面实现 |
+| Mobile | [README](aio-life-mobile/README.md)、[开发规范](aio-life-mobile/AGENTS.md)：先对照 Web 业务规则，再适配 uni-app x Vapor；按现行提交验证策略执行，分别报告 H5、微信编译／模拟器／真机、App 和发布结果 |
+| 后端 | [README](aio-life-server/README.md)、[开发规范](aio-life-server/AGENTS.md)：模块分层、数据库访问、鉴权及部署；不恢复已移除的 LLM 会话、消息和模型密钥业务 |
 
-LLM 会话、消息和模型密钥业务接口、数据表及实体 Mapper 已移除。
+移动端触底分页、请求竞争控制、间距与排版唯一来源、分包依赖归属及微信包体预算，以 [Mobile 开发规范](aio-life-mobile/AGENTS.md)和其引用的配置为准；不能通过放宽预算、删除检查或关闭 Vapor 绕过限制。
 
-### 数据与配置约束
-
-- SQL 脚本遵循 [SQL 脚本规范](aio-life-server/docs/SQL脚本规范.md)：表及每个字段必须有中文 `COMMENT`，包括 ID、版本、审计和逻辑删除字段；索引、约束及迁移执行条件必须说明。 新库、增量和业务运行仅支持 PostgreSQL 18+，CI 使用真实 PostgreSQL，不维护 MySQL 兼容实现。
-- 数据库迁移通过后端 `mvn -f tools/flyway/pom.xml compile flyway:migrate` 独立运行 Flyway，不在应用启动时自动执行。新库、已有库首次接入、后续升级和只读结构预检统一遵循[数据库初始化与验证](aio-life-server/docs/数据库初始化与验证.md)；不得对未知结构直接登记基线或跳过失败迁移。
-- 当前业务库使用 PostgreSQL；MySQL 原库仅作为迁移保留源，不再由应用访问。PostgreSQL 执行文件放在后端 `sql/migrations/`，旧 MySQL 结构、数据及历史修正 SQL 均不保留在工作树中，仅通过 Git 历史追溯；当前 SQL 只维护 PostgreSQL；日常不改写已执行的 PostgreSQL 迁移；本次聚合公共种子拆分须按后端指南显式校验并转换旧账本，不重放种子。
-- PostgreSQL 业务访问统一使用 MyBatis-Plus / MyBatis Mapper。禁止生产业务代码使用 `JdbcTemplate`、`NamedParameterJdbcTemplate`、`JdbcClient` 或直接 JDBC；禁止在 Service / Guard 内嵌 SQL。联表、行锁、特殊更新放入 Mapper；规则与自动检查见 Server 规范“数据库访问规范（强制）”。
-- 逻辑删除使用全局配置字段 `is_deleted`；对象映射使用 MapStruct，Lombok 配合 `lombok-mapstruct-binding`。
-- 数据库、Redis、MinIO、邮件等敏感配置通过 `AIO_LIFE_*` 环境变量注入。
-- 邮件验证码保留单 IP、单邮箱及全局频率限制，配置前缀为 `aio.life.server.auth.code.*`。
-- 定时任务使用 `@EnableScheduling`，LeetCode 同步 cron 可配置。
+关系型业务仅支持 PostgreSQL 18+，生产访问统一使用 MyBatis-Plus / MyBatis Mapper，SQL 不进入 Service / Guard。中文注释、结构预检、Flyway 独立执行和已有库升级统一遵循[SQL 规范](aio-life-server/docs/SQL脚本规范.md)及[数据库初始化与验证](aio-life-server/docs/数据库初始化与验证.md)。敏感配置通过环境变量注入，详细命名与默认值由后端维护。

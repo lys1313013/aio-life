@@ -40,10 +40,11 @@
 
 ## 迁移、审查与历史方案
 
-- [PostgreSQL 改造范围与迁移方案（2026-10-29）](design/postgresql-migration-2026-10-29.md)：后端、Query、数据搬迁、测试与切换范围；仅完成源码盘点，尚未实施，未操作现有业务库。
+- [PostgreSQL 改造范围与迁移方案（2026-10-29）](design/postgresql-migration-2026-10-29.md)：原始盘点与设计快照；源码已使用 PostgreSQL，当前执行流程以[数据库初始化与验证](../aio-life-server/docs/数据库初始化与验证.md)和 [Query README](../aio-life-query/README.md)为准。目标环境切换状态需单独核验。
 - [待办总览](待办任务.md)、[Mobile 全功能迁移清单](Mobile全功能迁移任务清单.md)、[迁移与验收分类索引](mobile-migration/README.md)。
 - [2026-10-03 架构与安全审查](reviews/2026-10-03-architecture-security/README.md)：原始发现、任务、修复和各阶段验证分别保留。
 - [2026-11-06 数据库设计审查](reviews/2026-11-06-database-design/README.md)：审查时的迁移结构、索引与唯一约束、软删除及清理建议；2026-11-08 整理证据边界，未连接目标业务库，整改未执行。
+- 专题历史验收：[2026-10-25 个人数据导出](reviews/2026-10-25-personal-data-export/README.md)、[2026-11-06 首页阅读统计](reviews/2026-11-06-weread-stats/README.md)、[接口最小信息契约](reviews/2026-11-11-interface-contract-history/README.md)（原执行日期未注明，2026-11-11 仅为归档日期）。记录保留原结果和未验证项，不代表当前版本重新验收。
 - [早期安全审查](安全与架构审查报告.md)、[2026-09-12 表结构与复用评估](表结构与代码复用重构评估-2026-09-12.md)：历史快照，不能直接作为当前缺陷清单。
 - [GraphQL 早期评估](graphql-permission-design.md)：单体看板方案；当前独立 Hasura 查询服务见上方 Query 入口。
 - [技术设计目录](design/README.md)、[页面参考与原型维护](prototypes/README.md)：已清理未采纳或被实现替代的 UI 稿件，页面参考直接指向现行源码。

@@ -104,20 +104,13 @@ Compose 会将已有的 `JAVA_TOOL_OPTIONS` 与 Agent 参数合并，不要在 `
 
 此入口只更新三个业务子仓库，要求它们处于 `main` 且工作区干净，使用 `git pull --ff-only`。主仓库自身、查询服务和插件需在各自仓库更新；不要为拉取代码丢弃未提交修改。
 
-后端请求 DTO 或 GET 参数调整后，从主仓库生成并检查两端契约（需已安装 Web 依赖）：
-
-```bash
-python3 scripts/generate-api-contracts.py
-python3 scripts/generate-api-contracts.py --check
-```
-
-先在所属仓库审查并提交改动，确认参与推送的仓库位于 `main`，再从主仓库执行：
+后端请求 DTO 或 GET 参数调整后，按 [API 参数规范](docs/API参数规范.md#契约生成与验证)生成并检查两端契约；不要手改生成文件。先在所属仓库审查并提交业务改动，再从主仓库使用统一交付入口：
 
 ```bash
 python3 scripts/push-repositories.py
 ```
 
-入口先快进更新参与仓库、生成并自动提交 Web 和移动端契约，再推送后端、Web、移动端及主仓库；全部成功后检查契约并触发只读联合 CI。需要 Web 依赖、Git 授权和已登录的 GitHub CLI，不会自动提交业务修改，也不处理查询服务或插件。明确跳过 Git hooks 时使用 `--skip-hooks`，详见[统一推送前提与失败恢复](docs/API参数规范.md#本地统一推送与联合检查)。
+入口覆盖后端、Web、移动端、主仓库，以及本地存在的独立 Query 仓库；浏览器插件单独交付。参与条件、依赖、执行顺序、`--skip-hooks` 和失败恢复统一维护在 [API 参数规范](docs/API参数规范.md#本地统一推送与联合检查)。
 
 日常验证按改动范围在所属仓库执行，命令见各端 README。纯文档改动检查差异和引用，无需业务测试或构建；本地检查、CI、目标环境部署和设备验收分别记录结果。
 

@@ -49,7 +49,7 @@ python3 -m unittest discover -s scripts -p 'test_api_contracts.py'
 
 ### 本地统一推送与联合检查
 
-先在对应仓库审查并提交业务修改，再在主仓库执行：
+本文统一维护跨仓库交付的详细步骤与失败处理。入口覆盖后端、本地存在的独立 Query、Web、移动端及主仓库，不包含浏览器插件。先在对应仓库审查并提交业务修改，再在主仓库执行：
 
 ```bash
 python3 scripts/push-repositories.py
