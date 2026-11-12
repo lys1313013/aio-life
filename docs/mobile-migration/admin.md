@@ -6,8 +6,8 @@ Web 证据：`views/time/time-tracker/{category-config,admin}`、`views/config-m
 
 | 任务 | 操作与字段 | 原生入口 / API |
 | --- | --- | --- |
-| TIME-03 | 列表、父子展开、个人新增/编辑/删除、公共覆盖、隐藏/恢复、卡片统计、同级排序；父分类、名称、颜色、图标、描述、时间类型 | `/pages/categories/index`；`/timeTrackerCategory/list,hidden`，POST/PUT 根资源，DELETE /{id}，POST /reSort |
-| TIME-04 | 公共分类 CRUD、启用、统计、子分类、排序、图标颜色、描述、时间类型 | `/pages/categories/index?admin=1`；`/timeTrackerCategory/admin/list` 和 POST /admin、PUT/DELETE /admin/{id} |
+| TIME-03 | 列表、父子展开、个人新增/编辑/删除、公共覆盖、隐藏/恢复、卡片统计、同级排序；父分类、名称、颜色、图标、描述 | `/pages/categories/index`；`/timeTrackerCategory/list,hidden`，POST/PUT 根资源，DELETE /{id}，POST /reSort |
+| TIME-04 | 公共分类 CRUD、启用、统计、子分类、排序、图标颜色、描述 | `/pages/categories/index?admin=1`；`/timeTrackerCategory/admin/list` 和 POST /admin、PUT/DELETE /admin/{id} |
 | CONFIG-01 | 字典类型查询/分页、新增/编辑/删除；dictName/dictType/remark | `/pages/admin/index?kind=dict-types`；`/sysDictType/query`，POST 根资源，PUT/DELETE /{dictId} |
 | CONFIG-02 | 字典数据类型/名称筛选、分页、CRUD；dictId/dictValue/dictLabel/sortOrder/remark，状态展示 | `kind=dict-data`；`/sysDictData/query`，POST 根资源，PUT/DELETE /{dictCode} |
 | ADMIN-01 | 用户关键词/分页、CRUD；username/nickname/role/email，在线与最近活动展示 | `kind=users`；`/user-center/list`，POST/PUT 根资源，DELETE /{id} |
