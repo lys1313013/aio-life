@@ -1,5 +1,7 @@
 # AIO Life 数据库设计复审（2026-11-12）
 
+> **迁移链已合并且尚未提交**：本文写作时的 `V20261111_01` 菜单数据已并入种子 `V20261110_02_006__menus.sql`；`V20261112_01` 至 `V20261112_12` 的结构、注释和配置变更已按类别并入当前基线或对应公共种子，公共种子继续独立维护。文中指向这些文件的链接仅作历史记录，当前工作树不再存在：`V20261111_01` 与 `V20261112_01`–`08` 可从 Git 历史追溯，`V20261112_09`–`12` 仅存在于本次未提交改动（暂存区）并已并入基线；合并后当前迁移链为基线加 11 个种子及 `V20261112_13`，共 13 个文件。**已有库升级**：已执行过旧 `V20261111_01` 或 `V20261112_*` 的库不能直接通过当前链增量升级，`flyway:validate` 会因基线 checksum 变化和已应用版本在本地缺失而失败；必须按迁移前逻辑备份在新库恢复业务数据（仅数据，不复用旧结构），或按一次性流程对齐历史：结构预检 → `flyway:repair` → `flyway:migrate`（应用 `V20261112_13`）→ `flyway:validate`。文末“目标库执行记录”中的目标库已于 2026-11-12 完成历史对齐并应用 `V20261112_13`，当前版本 `20261112.13`，结构预检通过。现状以 [数据库表结构](../../../aio-life-server/docs/数据库表结构.md) 和基线为准。
+
 > 复审日期：2026-11-12。对象为后端仓库当前工作树的 PostgreSQL V 迁移链（`V20261110_01` 至 `V20261112_05`，其中 `V20261112_01` 至 `V20261112_05` 为未提交改动）、实体 / Mapper 注解 SQL、导出配置；对照 [2026-11-06 数据库设计审查](../2026-11-06-database-design/README.md)。
 >
 > 本次在隔离 PostgreSQL 18 容器中按顺序执行全部 18 个迁移，并用项目 classpath 初始化 MyBatis-Plus `TableInfo`、实测 `ON CONFLICT` 推断和排序规则。未连接业务库（含 117），未在真实数据量上执行 `EXPLAIN`，未启动应用或做并发复现。
@@ -12,7 +14,7 @@
 
 **上次审查的整改覆盖了大部分唯一键与结构清理，但热点索引和时迹分类逻辑删除仍未处理；本次整改还引入了两个可复现的运行时缺陷，必须在升级任何已有库前修复。**
 
-- 18 个迁移在 PostgreSQL 18 空库上全部执行成功，结构本身自洽；当前 68 张业务表、32 个非主键唯一索引、31 个 CHECK、0 个外键。
+- 复审时的 18 个迁移在 PostgreSQL 18 空库上全部执行成功，结构本身自洽；当前 68 张业务表、32 个非主键唯一索引、31 个 CHECK、0 个外键。
 - 上次 P1-2（核心唯一键）、P1-4（财务 `undated` / `likeRight`）、P1-5（软删除后重建唯一键）基本完成；**P1-1（热点查询索引）完全未处理，P1-3（时迹分类逻辑删除）未修复**。
 - 新增 P1：
   1. **`ON CONFLICT` 与部分唯一索引谓词不匹配**，定时任务注册和 B 站视频导入在真实 PostgreSQL 上报错（已实测）。
@@ -241,7 +243,9 @@ TimeTrackerCategoryEntity logicDelete=false table=time_tracker_category
 'a' = 'A' → true；'é' = 'e' → true；'Ａ' = 'A' → true
 ```
 
-因此 `sys_menu.path` 的 `/Foo` 与 `/foo` 会触发唯一键冲突（已实测），字典值、`data_export_job.request_key` 等标识符也受同样影响。`V20261112_01` 已把 API Key、BV 号、对象键、外部订单号等改为 `COLLATE "C"`，但没有处理菜单路径和字典值。建议逐列判定：路径 / 机器标识使用确定性排序，展示文本保留 ICU 不区分大小写；判定结果写入字段规范。
+因此 `sys_menu.path` 的 `/Foo` 与 `/foo` 会触发唯一键冲突（已实测），字典值、`data_export_job.request_key` 等标识符也受同样影响。`V20261112_01` 已把 API Key、BV 号、对象键、外部订单号等改为 `COLLATE "C"`，但没有处理菜单路径和字典值。建议逐列判定：路径 / 机器标识使用确定性排序，展示文本保留 ICU 不区分大小写（后续未采纳，见下条）；判定结果写入字段规范。
+
+2026-11-12 跟进：已新增 `V20261112_12__deterministic_identifier_collations.sql`（后续并入基线），把 `sys_menu.path`、`system_config.config_key`、三处 `dict_type`、两处 `dict_value`、`data_export_job.request_key`、`membership_provider.code`、`cbti_personality.code`、`sys_scheduled_job.job_code`、`system_region.code/parent_code` 改为 `COLLATE "C"`。复审时“展示文本保留 ICU”的建议未采纳：所有文本列使用数据库默认确定性排序，大小写不敏感只在查询层用 `ILIKE` 或 `lower()` 显式表达。判定规则见[数据库设计审查与字段规范](../../../aio-life-server/docs/数据库设计审查与字段规范.md)第 3.3 节。
 
 ### P2-11 死字段与迁移说明
 
@@ -266,6 +270,8 @@ TimeTrackerCategoryEntity logicDelete=false table=time_tracker_category
 | 迁移可重复性 | `V20261112_02` 使用 `IF EXISTS`，其余新迁移依赖 Flyway 单次执行；不要手工重放 |
 
 ## 七、建议的整改顺序
+
+> 本节为复审时的整改建议，已被 2026-11-12 的整改与迁移链合并取代；现状见[文末整改记录](#九整改记录2026-11-12)。第 2 步“恢复基础文件并新增 V 迁移”的前提不再适用，已有库按顶部“迁移链已合并且尚未提交”说明处理。
 
 1. **先修 P1-1、P1-4**：两个 `ON CONFLICT` 谓词和导出死表都是确定会失败的运行时缺陷；补真实 PostgreSQL 回归测试。
 2. **确认 P1-5 前提**：查清是否有环境执行过旧版 `V20261110_01`。有则恢复基础文件并新增 `V` 迁移；无则在交付说明中记录“空库重建”前提。
@@ -298,14 +304,17 @@ TimeTrackerCategoryEntity logicDelete=false table=time_tracker_category
 | P1-4 | 从 `datasets.json` 与 `excluded-columns.json` 移除 `user_dict_type`；导出测试增加已删表断言 | `ExportDatasetRegistryTest` 3 项通过 |
 | P1-5 | 回退 `V20261110_01` 就地修改；新增 `V20261112_06` 统一 `is_deleted` 为 `smallint`、收窄 `wardrobe_item.file_id` | 空库全链迁移成功；`information_schema` 确认无 `integer` 的 `is_deleted` |
 | P1-6 | `V20261112_04` 增加待删表列存量预检；`V20261112_05` 增加 `pages_info` 非数组预检 | 空库执行成功；有数据时由 `DO` 块中止 |
+| P2-10 | 新增 `V20261112_12`（后续并入基线），把菜单路径、配置键、字典类型/键值、导出幂等键、平台/人格/定时任务/地区编码改为 `COLLATE "C"`；展示文本使用数据库默认确定性排序 | 当时 `mvn -o -f tools/flyway/pom.xml verify` 通过：25 个迁移、4 项集成测试；实测大小写变体可共存，等值与 `LIKE` 查询按字节匹配。合并后当前链为 13 个文件 |
 
 ```bash
 mvn -o test -Dtest=PostgresqlRegressionIntegrationTest,ExportDatasetRegistryTest,TimeTrackerCategoryServiceImplTest,TimeCategoryHierarchyTest,TimeTrackerCategoryCacheInvalidationTest,ScheduledJobTest,PerformanceFilesContractTest
 ```
 
-结果：64 项测试通过，0 失败。仓库自带 Flyway 校验 `mvn -f tools/flyway/pom.xml -o verify` 通过：24 项单元测试 + 4 项集成测试，空库执行 20 个迁移、重复迁移、增量升级、事务回滚与结构契约均通过。未覆盖：业务库存量、数据量级 `EXPLAIN`、应用启动、Web / 移动端实际页面。
+结果：64 项测试通过，0 失败。仓库自带 Flyway 校验 `mvn -f tools/flyway/pom.xml -o verify` 通过：24 项单元测试 + 4 项集成测试，当时空库执行 20 个迁移，重复迁移、增量升级、事务回滚与结构契约均通过。合并后当前链为 13 个文件。未覆盖：业务库存量、数据量级 `EXPLAIN`、应用启动、Web / 移动端实际页面。
 
-**目标库执行记录（2026-11-12）**：确认实际结构已与目标一致后，对目标库依次执行 `flyway:repair`、`flyway:migrate`、`flyway:validate`；V20261112.05–08 应用成功，当前版本为 `20261112.08`。迁移前已做逻辑备份。复核结果：27 个用户、6581 条时迹、72 条视频记录保留；旧列名 0 个，新增的 16 个索引和更新后的 `ck_time_record_time_range` 均存在；审计字段已全部 `NOT NULL` 且有默认值，系统字典 `is_enabled` 为 `NOT NULL DEFAULT 1`，`user_dict_data` 保持 NULL 继承语义并通过 CHECK 约束。`20261110.01` 与 `20261112.04` 的历史校验和已按当前文件修复；其他执行过旧版基础迁移或旧版 04 的环境也需要同样的 repair 步骤。
+**目标库执行记录（2026-11-12）**：确认实际结构已与目标一致后，对目标库依次执行 `flyway:repair`、`flyway:migrate`、`flyway:validate`；V20261112.05–12 应用成功，当前版本为 `20261112.12`（09–12 于同日稍后应用）。迁移前已做逻辑备份。
+
+**目标库历史对齐（2026-11-12）**：对同一目标库执行 `flyway:repair`，标记已删除的 `V20261111_01` 与 `V20261112_01`–`12`，并把当前 13 个文件的 checksum 对齐；随后 `flyway:migrate` 应用 `V20261112_13`，`flyway:validate` 与结构预检均通过，当前版本 `20261112.13`。升级前已另做完整逻辑备份；复核保留 27 个用户、6589 条时迹、72 条视频，`user_quick_nav` 逻辑删除残留 0，Typesafe 配置 0。复核结果：27 个用户、6581 条时迹、72 条视频记录保留；旧列名 0 个，新增的 16 个索引和更新后的 `ck_time_record_time_range` 均存在；审计字段已全部 `NOT NULL` 且有默认值，系统字典 `is_enabled` 为 `NOT NULL DEFAULT 1`，`user_dict_data` 保持 NULL 继承语义并通过 CHECK 约束。`20261110.01` 与 `20261112.04` 的历史校验和已按当前文件修复；其他执行过旧版基础迁移或旧版 04 的环境也需要同样的 repair 步骤。
 
 ### 后续字段优化（2026-11-12）
 
