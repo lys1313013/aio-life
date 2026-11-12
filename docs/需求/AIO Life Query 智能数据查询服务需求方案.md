@@ -16,9 +16,9 @@
 | 尚未提供 | 逐应用长期授权、授权管理 UI、取消接口、任意关系查询 |
 | 审计 | 独立持久卷，不新增业务审计表 |
 
-**结论：采用 `aio-life-query` Java 网关 + Hasura 查询引擎 + MySQL Connector。AI 读取授权后的业务模型并提交 GraphQL；用户身份、应用授权、二级锁由 AIO Life 判定，行列权限由 Hasura 在查询计划中落实。**
+**结论：采用 `aio-life-query` Java 网关 + Hasura 查询引擎 + PostgreSQL Connector。AI 读取授权后的业务模型并提交 GraphQL；用户身份、应用授权、二级锁由 AIO Life 判定，行列权限由 Hasura 在查询计划中落实。**
 
-本版替代 v0.1 的自由 SQL 入口、Java SQL 改写器和业务库 Mapper 执行器；不同时维护两条通用查询通道。MySQL 仍执行 Connector 生成的 SQL，AI 不需要编写 SQL。复杂业务操作继续由原业务 API 承担。
+本版替代 v0.1 的自由 SQL 入口、Java SQL 改写器和业务库 Mapper 执行器；不同时维护两条通用查询通道。PostgreSQL 仍执行 Connector 生成的 SQL，AI 不需要编写 SQL。复杂业务操作继续由原业务 API 承担。
 
 ## 1 服务名与职责
 
@@ -28,7 +28,7 @@
 | Java 根包 / 环境变量前缀 | `top.aiolife.query` / `AIO_QUERY_` |
 | Java 运行时 | Java 21 + Spring Boot，独立管理依赖 |
 | 对外入口 | REST 工具接口；MCP 适配器复用同一应用服务 |
-| 独立进程 | `aio-life-query`、`aio-life-query-hasura`、`aio-life-query-mysql-connector` |
+| 独立进程 | `aio-life-query`、`aio-life-query-hasura`、`aio-life-query-postgresql-connector` |
 | 用户体系 | 复用 AIO Life 身份和业务锁，不复制用户密码或认证库 |
 | 模型调用 | 由外部 AI 应用负责；本服务不保存大模型 API Key |
 
@@ -36,19 +36,19 @@ Java 负责业务接入和控制层；Hasura 是独立基础组件，其引擎�
 
 ## 2 Hasura 版本选择与落地前提
 
-**设计目标为 Hasura v3 引擎 + MySQL NDC Connector 本地部署，具体版本组合在 M0 验证后固定。不能把 v2 的配置文件直接用于 v3，也不能根据开源标签推断所有组件免费可用。**
+**设计目标为 Hasura v3 引擎 + PostgreSQL NDC Connector 本地部署，具体版本组合在 M0 验证后固定。不能把 v2 的配置文件直接用于 v3，也不能根据开源标签推断所有组件免费可用。**
 
 | 已核实事项 | 本项目决定 |
 | --- | --- |
-| v2 官方将 MySQL 自托管列为 Self-Hosted Enterprise | 不把 v2 社区镜像当作免费 MySQL 方案；若转用 v2，重新确认商业许可和配置方案 |
+| v2 社区版原生支持 PostgreSQL；MySQL、SQL Server 等连接器自托管才需要 Self-Hosted Enterprise | 可使用 v2 社区镜像自托管 PostgreSQL；若新增 MySQL 等数据源，重新确认商业许可和配置方案 |
 | v3 引擎读取 OpenDD 元数据，通过 NDC Connector 执行查询；仓库提供本地运行方式 | 分别部署引擎和 Connector，元数据进入 Git 和构建流水线 |
-| v3 引擎仓库声明 Apache-2.0，官方 MySQL Connector 页面也标注 Apache 2.0 | 仅说明这些源码的许可声明，不等于 DDN 托管平台或全部依赖均免费 |
-| 当前 MySQL Connector 源码构建引用 `org.jooq.pro:jooq:3.19.8`，读取 `JOOQ_PRO_EMAIL` / `JOOQ_PRO_LICENSE` | 核验目标镜像及其依赖使用条件、能否合法且可重复构建；本次不假定无需商业依赖 |
-| 官方 MySQL Connector 支持查询、筛选、简单聚合、排序、分页、关系和视图 | 先验证这些能力；不承诺任意 SQL 等价能力、任意分组、窗口函数或实时订阅 |
+| 上游 Connector 归档未包含许可证文件，GitHub API 的 license 为 null；v3 引擎仓库声明 Apache-2.0 | 不据开源标签推断 Connector 可免费再分发，生产发布前明确上游授权 |
+| 上游 Connector 模块声明 `org.jooq.pro:jooq:3.19.8` 并读取 `JOOQ_PRO_EMAIL` / `JOOQ_PRO_LICENSE`；本项目补丁改用 jOOQ OSS 3.19.8 | 核验目标镜像及其依赖使用条件、能否合法且可重复构建；jOOQ OSS 只解决该依赖的版本选择 |
+| Connector 支持查询、筛选、简单聚合、排序、分页、关系和视图（迁移前按 MySQL Connector 核验，PostgreSQL 需按同一范围复验） | 先验证这些能力；不承诺任意 SQL 等价能力、任意分组、窗口函数或实时订阅 |
 
-依据：[v2 MySQL 部署范围](https://hasura.io/docs/2.0/databases/mysql/index/)、[v3 引擎运行方式](https://github.com/hasura/graphql-engine/blob/master/v3/README.md)、[v3 Cargo 清单](https://github.com/hasura/graphql-engine/blob/master/v3/Cargo.toml)、[MySQL Connector 能力](https://hasura.io/connectors/mysql)、[Connector 当前构建依赖](https://github.com/hasura/ndc-jvm-mono/blob/main/ndc-connector-mysql/build.gradle.kts)。核验日期为本文日期。
+依据（迁移前 MySQL Connector）：[v2 MySQL 部署范围](https://hasura.io/docs/2.0/databases/mysql/index/)、[v3 引擎运行方式](https://github.com/hasura/graphql-engine/blob/master/v3/README.md)、[v3 Cargo 清单](https://github.com/hasura/graphql-engine/blob/master/v3/Cargo.toml)、[MySQL Connector 能力](https://hasura.io/connectors/mysql)、[Connector 当前构建依赖](https://github.com/hasura/ndc-jvm-mono/blob/main/ndc-connector-mysql/build.gradle.kts)。改用 PostgreSQL Connector 后许可与能力需按同一范围重新核验，本次整理未重新执行。
 
-**M0 阻断条件：** 在测试环境完成引擎、Connector、MySQL 的版本兼容和许可核验；证明元数据可以在本地构建、运行时不依赖云控制面，且无需把业务数据或凭据上传到外部平台。若无法满足，记录具体缺口，再选择适用的商业部署或 Connector 调整方案，不能以“已接入 Hasura”掩盖未解决依赖。
+**M0 阻断条件：** 在测试环境完成引擎、Connector、PostgreSQL 的版本兼容和许可核验；证明元数据可以在本地构建、运行时不依赖云控制面，且无需把业务数据或凭据上传到外部平台。若无法满足，记录具体缺口，再选择适用的商业部署或 Connector 调整方案，不能以“已接入 Hasura”掩盖未解决依赖。
 
 ## 3 用户、目标与首期范围
 
@@ -72,8 +72,8 @@ flowchart LR
     Q -->|内部执行票据| H[Hasura v3 引擎]
     H -->|Auth Webhook| W[aio-life-query 内部鉴权入口]
     W -->|实时复核| B
-    H -->|带权限谓词的执行计划| C[MySQL NDC Connector]
-    C -->|只读账号| D[(业务 MySQL 或只读副本)]
+    H -->|带权限谓词的执行计划| C[PostgreSQL NDC Connector]
+    C -->|只读账号| D[(业务 PostgreSQL 或只读副本)]
     Q --> R[(执行票据 Redis)]
     W --> R
     Q --> A[(独立审计存储)]
@@ -85,13 +85,13 @@ flowchart LR
 | `aio-life-query` | 授权目录、GraphQL AST 校验、锁依赖解析、额度、执行票据、审计、结果复核 | 自行改写任意 SQL |
 | Hasura | 角色对应的模型与字段权限、行过滤、GraphQL 计划 | 理解 AIO Life 二级锁、替用户审批授权 |
 | Connector | 把授权后的计划转为数据库查询、连接池和执行资源控制 | 决定调用者拥有哪个用户身份 |
-| MySQL | 只读对象授权、执行查询、数据库资源限制 | 自动继承 Java 业务接口的 `user_id` 条件 |
+| PostgreSQL | 只读对象授权、执行查询、数据库资源限制 | 自动继承 Java 业务接口的 `user_id` 条件 |
 
 外部只开放 `aio-life-query`。Hasura 仅接受网关服务身份的连接，Webhook 仅接受 Hasura 服务身份，Connector 仅接受 Hasura，业务库仅向 Connector 的只读账号开放。使用网络策略和服务间认证；不能只靠端口不公开或一个可伪造的来源 Header。
 
 运行通道不配置管理员身份旁路、NoAuth 或匿名读取；不把控制台、元数据管理端点、Connector 查询接口暴露给 AI。部署用的管理凭据与查询运行凭据分离。禁用备用认证模式，忽略外部所有 `X-Hasura-*` 身份/认证模式 Header，内部只构造允许的 Header。
 
-**隔离强度说明：** 同一 MySQL 只读账号仍可能读取多个用户的行；行隔离依赖受信任的 Hasura 权限配置及完整入口链路。只读账号负责阻断写入，不提供数据库原生的逐用户行隔离。若要求引擎失陷后也无法跨用户读取，需要另行设计物理库、账号或数据库级隔离。
+**隔离强度说明：** 同一 PostgreSQL 只读账号仍可能读取多个用户的行；行隔离依赖受信任的 Hasura 权限配置及完整入口链路。只读账号负责阻断写入，不提供数据库原生的逐用户行隔离。若要求引擎失陷后也无法跨用户读取，需要另行设计物理库、账号或数据库级隔离。
 
 ## 5 权限模型：谁、以哪个应用、能读什么
 
@@ -190,7 +190,7 @@ AIO Life 内部访问决策接口复用 `SecondaryLockGuard.checkMenus(userId, .
 
 ### 6.1 普通个人表
 
-以时迹为例，逻辑模型 `TimeRecords` 映射 `time_record`，`userId` 映射 `user_id`，`isDeleted` 映射 `is_deleted`，`durationMinutes` 映射现有 `duration`。权限意图为：
+以时迹为例，逻辑模型 `TimeRecords` 映射 `time_record`，`userId` 映射 `user_id`，`isDeleted` 映射 `is_deleted`，`durationMinutes` 映射当前列 `duration_minutes`。权限意图为：
 
 ```text
 实际可读行 = 当前用户的行 AND is_deleted = 0 AND 调用者业务筛选
@@ -261,7 +261,7 @@ Hasura v3 的模型过滤可引用身份会话变量，类型权限通过 `allow
 
 | 情况 | 接入方式 |
 | --- | --- |
-| `time_record` 普通明细 | 直接模型，使用现有 `duration` 分钟值 |
+| `time_record` 普通明细 | 直接模型，使用 `duration_minutes` 分钟值 |
 | 公共时迹分类、用户覆盖、隐藏与启用状态 | 建立与现有业务一致的有效分类模型；验证前只提供安全分类 ID，不假装原表联查等价 |
 | 按月、按分类统计 | 优先使用已验证的 Connector 聚合；不支持任意分组时发布固定维度汇总视图/模型 |
 | 消息发送方或接收方、未读筛选 | 保留现有 API；其可见规则并非固定 `user_id = 当前用户` |
@@ -381,7 +381,7 @@ MCP 会话 ID 不作为认证凭据；每次工具调用使用当前凭据并进
 
 ### 8.2 查询终止的真实边界
 
-网关 HTTP 超时只代表停止等待，不证明数据库语句终止。M0 必须验证所选 Connector 的连接池、语句超时、取消传播和连接复用行为；结合目标 MySQL 支持的执行时限设置，证明失联或超时后资源在确定时限内释放。
+网关 HTTP 超时只代表停止等待，不证明数据库语句终止。M0 必须验证所选 Connector 的连接池、语句超时、取消传播和连接复用行为；结合目标 PostgreSQL 支持的执行时限设置，证明失联或超时后资源在确定时限内释放。
 
 如果 Connector 不支持即时取消，可以实现“请求取消后不再交付结果，数据库在已验证硬超时内终止”，并在取消响应区分 `cancelRequested` 与 `executionTerminated`。若数据库端无法保证有界终止，不能上线通用查询。需要修改 Connector 时，修改项单独纳入开发范围及版本维护，不假定 Hasura 开箱即有全部能力。
 
@@ -403,7 +403,7 @@ MCP 会话 ID 不作为认证凭据；每次工具调用使用当前凭据并进
 | --- | --- | --- |
 | `aio-life-query` | AIO Life 内部调用身份、Redis 和自身审计库访问 | 唯一对外业务入口；管理端点另设内网端口 |
 | `aio-life-query-hasura` | 已构建 OpenDD、AuthConfig、Connector 地址 | 仅网关可访问查询端口 |
-| `aio-life-query-mysql-connector` | 被批准对象的元数据、业务 MySQL 只读凭据 | 仅 Hasura 可访问 |
+| `aio-life-query-postgresql-connector` | 被批准对象的元数据、业务 PostgreSQL 只读凭据 | 仅 Hasura 可访问 |
 | 票据 Redis | 有 TTL 的票据摘要与状态 | 仅网关及其 Webhook 模块 |
 | 审计存储 | 审计摘要 | 与业务只读凭据分开 |
 | AIO Life | 用户、应用授权、原凭据、二级锁事实 | 内部访问决策接口仅向受信服务开放 |
@@ -426,7 +426,7 @@ aio-life-query/
 ├── catalog/                   # 字段语义、单位、角色模板和锁依赖
 ├── db/views/                  # 审核后的业务视图迁移
 ├── deploy/                    # 容器编排和网络策略
-└── tests/security/            # 双用户隔离和目标 MySQL 集成夹具
+└── tests/security/            # 双用户隔离和目标 PostgreSQL 集成夹具
 ```
 
 发布包绑定：Connector 结构指纹 + OpenDD 构建产物 + 角色 SDL + 目录能力 + 锁映射 + `schemaVersion` / `policyVersion` / `releaseId`。CI 检查目录字段与真实 Schema、角色、过滤、输入能力一致，缺少归属或锁映射时拒绝发布。
@@ -457,7 +457,7 @@ AIO Life 需要新增：应用授权持久化、查询专用凭据签发、内�
 
 ### 10.1 发布必须通过的验收
 
-使用两个虚构用户 A/B、公共模板、已删除数据、敏感字段、错误归属关系和超过安全整数范围的 ID；在选定版本的真实 MySQL、Hasura、Connector 上验证。
+使用两个虚构用户 A/B、公共模板、已删除数据、敏感字段、错误归属关系和超过安全整数范围的 ID；在选定版本的真实 PostgreSQL、Hasura、Connector 上验证。
 
 | 场景 | 必须结果 |
 | --- | --- |
@@ -477,7 +477,7 @@ AIO Life 需要新增：应用授权持久化、查询专用凭据签发、内�
 | 深度、别名、嵌套列表、宽日期聚合攻击 | 在进入数据库前拒绝或受硬执行上限约束 |
 | 超时、断开、取消、引擎失联 | 不交付后续结果，数据库在已验证时限内终止 |
 | GraphQL 同时返回 data 和 errors | 整次失败，无部分业务数据外泄 |
-| 直接使用 Connector 账号尝试写入 | MySQL 拒绝 |
+| 直接使用 Connector 账号尝试写入 | PostgreSQL 拒绝 |
 | 从外网访问 Hasura、Connector、Webhook、管理面 | 无可用查询或管理入口 |
 | 脱敏日志检查 | 网关、引擎、Connector 均不含票据、变量或结果正文 |
 | 时迹分类覆盖、隐藏分类、固定维度统计 | 与现有业务 API 的固定夹具结果一致 |
@@ -488,7 +488,7 @@ H2、仅比较 SQL 字符串、仅观察 HTTP 超时，均不能替代以上端�
 
 | 阶段 | 交付物 | 通过条件 |
 | --- | --- | --- |
-| M0 Hasura + MySQL 可行性验证 | 固定版本和依赖核验、本地构建、虚构双用户时迹模型、行列权限和超时验证 | 无未解决的运行依赖；无越权或精度损失；数据库有界终止 |
+| M0 Hasura + PostgreSQL 可行性验证 | 固定版本和依赖核验、本地构建、虚构双用户时迹模型、行列权限和超时验证 | 无未解决的运行依赖；无越权或精度损失；数据库有界终止 |
 | M1 最小业务闭环 | Java 网关、AIO Life 授权接口、时迹目录、二级锁、查询与审计 | REST 闭环及权限负向场景通过 |
 | M2 首期业务完整 | 有效分类与固定维度统计、目标/待办/阅读分域接入 | 各模型明确归属、字段、锁、口径；本节安全验收通过 |
 | M3 AI 接入与灰度 | REST 工具 / 所需 MCP 适配、压测、版本切换与关闭开关 | 人工基准正确，容量有依据，可独立停用查询服务 |
@@ -503,7 +503,7 @@ H2、仅比较 SQL 字符串、仅观察 HTTP 超时，均不能替代以上端�
 - 性能目标：包含实时授权的目录接口 P95 < 300 ms；不含数据库执行的查询服务开销 P95 < 500 ms。均为待压测目标，不是当前性能事实。
 - AI 可用性：建立至少 30 个实际问题的固定评测集，按选定模型记录生成查询成功率、答案正确率和拒绝解释质量；模型未选定前不承诺自然语言准确率。
 
-仍需在 M0/M1 明确：引擎/Connector/CLI 的确切版本及依赖条件、目标 MySQL 实际版本和规模、副本是否存在、首批公开字段、有效分类口径、应用授权交互及审计保留期。本版不涉及商业购买、生产配置变更或数据库迁移执行。
+仍需在 M0/M1 明确：引擎/Connector/CLI 的确切版本及依赖条件、目标 PostgreSQL 实际版本和规模、副本是否存在、首批公开字段、有效分类口径、应用授权交互及审计保留期。本版不涉及商业购买、生产配置变更或数据库迁移执行。
 
 ## 附录：当前项目依据与本次交付范围
 
@@ -526,4 +526,4 @@ H2、仅比较 SQL 字符串、仅观察 HTTP 超时，均不能替代以上端�
 - [时迹分类业务口径](../../aio-life-server/src/main/java/top/aiolife/record/service/impl/TimeTrackerCategoryServiceImpl.java)
 - [消息查询规则](../../aio-life-server/src/main/java/top/aiolife/sso/service/impl/MessageServiceImpl.java)
 
-当前已创建本地独立 `aio-life-query` 仓库，完成时迹单表、直接 Token / API Key 校验及 MCP 接入，并使用隔离 MySQL / Redis、真实 Hasura 与 Connector 验证。验收结果见 `aio-life-query/docs/验证记录.md`；未发布生产环境，生产镜像构建、Connector 许可与真实规模性能仍需落实。
+当前已创建本地独立 `aio-life-query` 仓库，完成时迹单表、直接 Token / API Key 校验及 MCP 接入，并使用隔离 PostgreSQL / Redis、真实 Hasura 与 Connector 验证。验收结果见 `aio-life-query/docs/验证记录.md`；未发布生产环境，生产镜像构建、Connector 许可与真实规模性能仍需落实。

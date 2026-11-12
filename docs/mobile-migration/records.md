@@ -126,7 +126,7 @@
 证据：Web `my-hub/performance/index.vue`与编辑组件；Server `PerformanceController`、`PerformanceEntity`。
 
 - [x] GET/POST/PUT `/performance`、DELETE `/{id}`；完整分页读取/活动类型/关键词筛选、总票价统计。
-- [x] performanceName/performer/performanceType/performanceDate/city/venue/ticketPrice/seatInfo/duration/rating/review/purchasePlatform/orderNumber、字典/附件预览上传/完整绑定列表。
+- [x] performanceName/performer/performanceType/performanceDate/city/venue/ticketPrice/seatInfo/durationMinutes/rating/review/purchasePlatform/orderNumber、字典/附件预览上传/完整绑定列表。
 - [x] 第3处后端兼容修复恢复附件替换/清空闭环：未传保留、[]解绑而不删文件；所有绑定ID校验当前用户上传归属，已验证活动归属后事务内同步。
 
 ### REC-13 反馈中心

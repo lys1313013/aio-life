@@ -61,7 +61,7 @@
 | ORM | **MyBatis-Plus 3.5.11**（非 Spring Data JPA） |
 | 认证 | Sa-Token 1.40.0（`SaTokenConfig` 已配置 `SaTokenContextForThreadLocal` 作为 second context） |
 | 鉴权粒度 | 拦截器级别（`ApiKeyInterceptor` + `SaInterceptor` + `UserLastActiveInterceptor`） |
-| 数据库 | MySQL（Druid 连接池） + Redis + Neo4j |
+| 数据库 | PostgreSQL（Druid 连接池） + Redis + Neo4j |
 | 缓存 | Spring Cache（Caffeine 本地 + Redis 分布式） |
 | 监控 | Actuator + Prometheus + Micrometer Tracing（Brave） |
 | 对象存储 | MinIO |

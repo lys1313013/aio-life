@@ -122,6 +122,8 @@ python3 scripts/push-repositories.py
 
 ![系统架构：Web、Mobile、浏览器插件与 MCP 客户端连接统一业务后端、数据存储、第三方数据来源及通知渠道](docs/architecture/system-architecture.png)
 
+> 架构图为 2026-10-22 生成版本，存储层仍标注迁移前的 MySQL；当前实现使用 PostgreSQL 18+，重新生成提示词见 [docs/architecture/prompts.json](docs/architecture/prompts.json)。
+
 查询服务目前开放时迹、运动、阅读、影视、视频、演出六个数据集，提供 REST、GraphQL HTTP 和 MCP，支持时迹分类关系；通过原后端校验 Token／API Key。具体范围及部署限制见[查询服务说明](https://github.com/lys1313013/aio-life-query/blob/main/README.md)，图示不代表目标环境已部署全部可选服务。
 
 ## 目录结构

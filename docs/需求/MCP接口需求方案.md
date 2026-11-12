@@ -9,7 +9,7 @@
 | 工具 | 能力 | 主要参数／限制 |
 | --- | --- | --- |
 | `time_record_queryByDateRange` | 读取日期范围时迹，含分类和精简运动明细 | `startDate`、`endDate`，日期字符串 |
-| `time_record_save` | 新增一段时迹 | 可选 `categoryId/date/title/description/startTime/endTime`；显式起止须成对提供 |
+| `time_record_save` | 新增一段时迹 | 可选 `categoryId/date/title/description/startMinute/endMinute`；显式起止须成对提供 |
 | `thought_save` | 新增闪念及关联事件 | `content`、`events[].content` |
 | `time_tracker_category_list` | 当前用户可见时迹分类 | 无参数 |
 | `task_list` | 待办主任务及明细 | 可选 `page/pageSize`，返回 `items/total`，供逐页选择真实 ID |
@@ -28,8 +28,8 @@
 ## 参数与结果边界
 
 - 用户身份来自 Bearer 登录态／API Key，不接受工具参数指定所属用户。菜单二级锁仍适用；不能因 AI 发起调用而跳过业务权限。
-- 日期使用 `yyyy-MM-dd`。时迹分钟为闭区间，时长为 `endTime - startTime + 1`。
-- `time_record_save` 可显式指定闭区间分钟 `startTime/endTime`（0–1439，结束不早于开始）。省略两者时，只允许今天，从最后一条结束分钟加一追加到当前分钟；不存在可追加时段时拒绝，不裁剪成重复记录。非今天的记录必须提供起止时间。阅读／观影关联及运动明细使用现有 REST 接口。
+- 日期使用 `yyyy-MM-dd`。时迹分钟为闭区间，时长为 `endMinute - startMinute + 1`。
+- `time_record_save` 可显式指定闭区间分钟 `startMinute/endMinute`（0–1439，结束不早于开始）。省略两者时，只允许今天，从最后一条结束分钟加一追加到当前分钟；不存在可追加时段时拒绝，不裁剪成重复记录。非今天的记录必须提供起止时间。阅读／观影关联及运动明细使用现有 REST 接口。
 - `task_detail_update` 只更新非 `null` 字段，数字 `0` 仍表示明确修改；须修改已有且属于当前用户的明细，不会隐式新增。
 - 阅读、观影、目标和视频查询的状态筛选使用 `not_started/in_progress/completed/on_hold`。响应展示中文业务标签，各模块文案可不同。
 - 目标类型为 `GoalTypeEnum` 的 1–10；目标进度更新的 `status` 使用 `in_progress/completed/on_hold`，与查询使用同一状态代码。
