@@ -15,7 +15,7 @@
 审查发现以下 5 类问题，建议在正式上线前处理：
 
 1. **热点查询缺少匹配索引**：72 张业务表中 17 张没有任何二级索引；`time_record` 只有单列 `date` 索引；临时空库的代表查询出现全表扫描计划，实际业务耗时仍需有数据量的验证。
-2. **核心唯一性只靠“先查再写”**：`user.username`、`user.email`、`user_bind(user_id, platform)`、两张通知配置表、`system_config.config_key`、`api_key.api_key` 都没有数据库唯一约束，并发下重复后 `selectOne/getOne` 会抛 `TooManyResultsException`。
+2. **核心唯一性只靠“先查再写”**：`user.username`、`user.email`、`user_bind(user_id, platform)`、两张通知配置表、`sys_config.config_key`、`api_key.api_key` 都没有数据库唯一约束，并发下重复后 `selectOne/getOne` 会抛 `TooManyResultsException`。
 3. **时迹分类的逻辑删除实际失效**：`TimeTrackerCategoryEntity` 重新声明了 `isDeleted`，遮蔽父类 `BaseEntity` 的 `@TableLogic`；运行时 `TableInfo` 中 `logic=false`，`removeById` 变成物理删除，并且删除公共分类时会把用户覆盖记录一并物理删除，可能留下 `time_record.category_id` 孤儿。
 4. **结构收紧后留下了不可用的查询**：`expense.exp_time`、`income.inc_date` 已是 `NOT NULL`，但查询仍保留 `undated=true → isNull(...)` 分支；前端财务日历在无日期区间时正好发送 `undated: true`，该分支永远返回空。`likeRight(year)` 生成 `LIKE '2025%'`，时间列隐式转字符串，补索引也用不上。
 5. **软删除与唯一键的冲突没有统一策略**：`sys_menu.path`、`cbti_personality.code` 等唯一键没有排除已删除行；删除后再创建同路径/同编码会触发唯一键冲突，HTTP 返回行为尚未复现。只有 `user`、`membership_provider` 使用了 `active_flag` 生成列模式。
@@ -52,7 +52,7 @@
 
 ### P1-1 热点查询缺少索引，多个主流程是全表扫描
 
-有效结构中有 **17 张业务表没有任何二级索引**（仅主键）：`exercise_record`、`expense`、`income`、`login_log`、`memo`、`notification_channel_config`、`notification_preference`、`record_article`、`sys_dict_data`、`sys_dict_type`、`sys_work_calendar`、`system_config`、`task_detail`、`thought`、`thought_rela_event`、`user_bind`、`wardrobe_category`。列数不能说明数据量，是否构成瓶颈还需结合行数、查询频率和执行计划判断。
+有效结构中有 **17 张业务表没有任何二级索引**（仅主键）：`exercise_record`、`expense`、`income`、`login_log`、`memo`、`notification_channel_config`、`notification_preference`、`record_article`、`sys_dict_data`、`sys_dict_type`、`sys_work_calendar`、`sys_config`、`task_detail`、`thought`、`thought_rela_event`、`user_bind`、`wardrobe_category`。列数不能说明数据量，是否构成瓶颈还需结合行数、查询频率和执行计划判断。
 
 原审查记录的执行计划（MySQL 8.0.40，空表只用于看计划形状；完整原始输出未保留）：
 
@@ -83,7 +83,7 @@
 | `task_detail` | `(task_id, user_id, is_completed, sort_order, id)`；`(user_id, is_starred, is_completed, priority, sort_order, id)` | 任务明细、关注列表 |
 | `task` | `(user_id, is_deleted, sort_order, id)` | 看板列表 |
 | `device` | `(user_id, is_deleted, purchase_date, id)` | 设备列表 |
-| `performance` | `(user_id, is_deleted, performance_date, id)` | 演出列表 |
+| `event_record` | `(user_id, is_deleted, event_date, id)` | 活动列表 |
 | `goal` | `(user_id, is_deleted, create_time, id)`；`(parent_id, is_deleted, status)` | 列表、父子统计 |
 | `user_bind` | 先按 P1-2 建唯一 `(user_id, platform, active_flag)`；另补 `platform` 供定时任务全量扫描 | 绑定读取、LeetCode 同步 |
 | `notification_channel_config` | 唯一 `(user_id, channel, active_flag)` | 配置读取 |
@@ -105,7 +105,7 @@
 | `user_bind(user_id, platform)` | 无索引，仅主键 | [UserBindServiceImpl.java:25-28](../../../aio-life-server/src/main/java/top/aiolife/record/service/impl/UserBindServiceImpl.java#L25-L28) `getOne` | 首页每张卡片都会查询；重复绑定后 `getOne` 抛异常，首页卡片不可用 |
 | `notification_channel_config(user_id, channel)` | 无索引，仅主键 | [FeishuNotificationServiceImpl.java:432-434](../../../aio-life-server/src/main/java/top/aiolife/record/service/impl/FeishuNotificationServiceImpl.java#L432-L434) `selectOne` | 并发首次保存产生两条后，通知配置读取失败 |
 | `notification_preference(user_id, biz_type, channel)` | 无索引，仅主键 | [FeishuNotificationServiceImpl.java:438-441](../../../aio-life-server/src/main/java/top/aiolife/record/service/impl/FeishuNotificationServiceImpl.java#L438-L441) `selectOne` | 同上；通知偏好不可用 |
-| `system_config.config_key` | 列注释写“唯一”，实际无唯一索引 | [SystemConfigServiceImpl.java:120](../../../aio-life-server/src/main/java/top/aiolife/system/service/impl/SystemConfigServiceImpl.java#L120) 等 4 处 `selectOne` | 重复配置后读取抛异常；配置服务不可用 |
+| `sys_config.config_key` | 列注释写“唯一”，实际无唯一索引 | [SystemConfigServiceImpl.java:120](../../../aio-life-server/src/main/java/top/aiolife/system/service/impl/SystemConfigServiceImpl.java#L120) 等 4 处 `selectOne` | 重复配置后读取抛异常；配置服务不可用 |
 | `api_key.api_key` | 无唯一索引，仅主键 | [ApiKeyServiceImpl.java:67-70](../../../aio-life-server/src/main/java/top/aiolife/sso/service/impl/ApiKeyServiceImpl.java#L67-L70) `getOne` | 重复/碰撞后 API 认证失败；当前每次请求还全表扫 |
 | `bank_card(user_id, card_no_fingerprint)` | 只有普通索引 `(user_id, fingerprint, is_deleted)` | 服务层先查后写 | 同一张卡重复录入；统计和余额重复计算 |
 | `b_video(user_id, bvid)` | 只有 `idx_bvid`，无唯一约束 | [IBVideoMapper.java:27-37](../../../aio-life-server/src/main/java/top/aiolife/record/mapper/IBVideoMapper.java#L27-L37) 按 BV 号取一条 | 同一用户同一视频可重复标记，状态/时长重复累计 |
@@ -119,7 +119,7 @@
 
 这里只记录设计，正式 DDL 应在后端 `sql/migrations/` 中交付，并包含执行条件和数据核查；不把本文当作迁移脚本。
 
-同样的模式可用于 `notification_channel_config`、`notification_preference`、`system_config`、`bank_card`、`b_video`、`sys_menu.path`、`cbti_personality.code` 等需要“删除后重建”的业务键。认证凭据和导出幂等键应先确定是否要求跨删除历史仍然唯一，不能机械套用。执行前必须逐表查出有效重复与异常删除值，不能自动删数据；字符串比较规则（大小写、首尾空格）也要先定。
+同样的模式可用于 `notification_channel_config`、`notification_preference`、`sys_config`、`bank_card`、`b_video`、`sys_menu.path`、`cbti_personality.code` 等需要“删除后重建”的业务键。认证凭据和导出幂等键应先确定是否要求跨删除历史仍然唯一，不能机械套用。执行前必须逐表查出有效重复与异常删除值，不能自动删数据；字符串比较规则（大小写、首尾空格）也要先定。
 
 ### P1-3 时迹分类的逻辑删除实际失效（数据会被物理删除）
 
@@ -272,9 +272,9 @@ V20261028_02 统一了 `sort_order`、`remark`、`is_enabled` 的**命名**，�
 
 ### P2-9 其他一致性问题
 
-- `performance` 分页没有 `ORDER BY`（[PerformanceRecordService.java:26-34](../../../aio-life-server/src/main/java/top/aiolife/record/service/PerformanceRecordService.java#L26-L34)），跨页顺序无定义；加 `performance_date DESC, id DESC`。
+- `event_record` 分页没有 `ORDER BY`（[EventRecordService.java:26-34](../../../aio-life-server/src/main/java/top/aiolife/record/service/EventRecordService.java#L26-L34)），跨页顺序无定义；加 `event_date DESC, id DESC`。
 - `message.sender_id` 是 `NOT NULL`，系统通知写死 `senderId=1L`（[SystemNotificationSender.java:33](../../../aio-life-server/src/main/java/top/aiolife/record/notification/SystemNotificationSender.java#L33)），但用户 ID 实际由雪花生成，1 不一定是有效账号。建议改为可空 + `type=0`，或建专用系统账号；至少文档化伪发送者。
-- `performance.performance_date` 是 `datetime NOT NULL`，实体是 `LocalDate`；`milestone.date`/`end_date` 是 `date`，实体是 `String`；`time_record.is_manual` 是 `tinyint`，实体是 `Long` 且全仓无写入。类型放宽会掩盖语义，建议改回 `LocalDate`/`Integer` 并明确字段是否仍需保留。
+- `event_record.event_date` 是 `datetime NOT NULL`，实体是 `LocalDate`；`milestone.date`/`end_date` 是 `date`，实体是 `String`；`time_record.is_manual` 是 `tinyint`，实体是 `Long` 且全仓无写入。类型放宽会掩盖语义，建议改回 `LocalDate`/`Integer` 并明确字段是否仍需保留。
 - `time_record` 的 `start_time/end_time` 注释仍写“0-1440”，业务有效区间是 0–1439。D02 已修复应用局部更新时的时长重算，现行方案保留物理 `duration` 列；存量一致性仍需巡检。若后续改为生成列，应单独评估所有写入、导出与 Query 路径，并同步迁移，不能把该候选方案写成已采纳规则。
 - `time_record.id`、`file.id` 的 `varchar(32)` 与其他 `bigint` 主键混用，见 P2-3。
 
@@ -285,7 +285,7 @@ V20261028_02 统一了 `sort_order`、`remark`、`is_enabled` 的**命名**，�
 | 候选冗余索引 | `anniversary_record.idx_user_id`、`goal.idx_user_id`、`wardrobe_item.idx_user_id` 与更长索引的最左前缀重复；删除前比较索引宽度、覆盖查询和真实计划 |
 | 候选低收益索引 | `b_video.idx_title(100)` 不能为 `LIKE '%x%'` 提供前缀范围定位；`idx_aid`、`honor_record.idx_honor_date`/`idx_category_id`、`anniversary_record.idx_target_date` 在已审查查询中未见筛选引用；`b_video.idx_status` 曾出现全索引扫描，但不能仅凭扫描类型认定为负收益 |
 | `SELECT *` | `IBVideoMapper` 的列表/锁查询、`ActivityLogMapper` 导出查询等；`b_video` 含 `description/pages_info`，走二级索引会回表读大字段 |
-| N+1 | `HonorRecordController` 每条记录查一次 `fileService.getByBiz`；`PerformanceRecordService` 每条记录查一次附件。改为 `biz_id IN (...)` 批量取回 |
+| N+1 | `HonorRecordController` 每条记录查一次 `fileService.getByBiz`；`EventRecordService` 每条记录查一次附件。改为 `biz_id IN (...)` 批量取回 |
 | 深分页 | `page` 只限制 `>=1`，无上限；`expense`/`b_video` 这类 `ALL + filesort` 计划会随页码线性恶化。列表加 `id` 唯一键兜底，深分页改游标 |
 | 排序表达式 | `ORDER BY FIELD(status, ...)` 天然阻断索引排序；单用户量级可接受，量级上来可加 `status_sort` 生成列 |
 | 文档漂移 | `docs/数据库表结构.md` 的 `login_log.ip_address` 仍写“创建时间”（应为“IP地址”）；`user` 索引清单漏 `idx_user_erasure_retry`、`idx_user_avatar_file`、`fk_user_avatar_file`；`bank_card_cover_template` 索引/约束清单不完整；`record_article` 标题“文章记录表” vs 表注释“收藏文章表”；`time_record` 注释 0–1440 vs 业务 0–1439 |
@@ -305,7 +305,7 @@ V20261028_02 统一了 `sort_order`、`remark`、`is_enabled` 的**命名**，�
 | 时迹 | 核心模型（日期 + 分钟区间 + 分类）合理 | `time_record` 索引错误；分类逻辑删除失效；`duration` 派生值；`is_manual` 死字段 |
 | 财务 | 收支分表、金额 DECIMAL、分类/支付方式字典合理 | 无用户时间索引；`likeRight(year)`/`undated` 死分支；金额缺少非负 CHECK；`inc_date` 与 `exp_time` 粒度/命名不一致 |
 | 目标 | 进度模式（手动/GraphQL）设计清楚 | 索引不匹配排序；`year/month/day` 与 `start_date/end_date` 双套维度；`target/current` 派生一致性 |
-| 阅读/影视/演出 | 业务字段清晰，状态枚举统一 | 进度单位“页数或百分比”“集数或时长”未拆列；`performance` 无排序分页；`performance_date` 类型 |
+| 阅读/影视/活动 | 业务字段清晰，状态枚举统一 | 进度单位“页数或百分比”“集数或时长”未拆列；`event_record` 无排序分页；`event_date` 类型 |
 | 银行卡 | 安全设计最好：密文、指纹、末四位、模板 | 唯一性/检查约束不足；6 个索引需复核；`expiry_month` 用 DATE 存月首日 |
 | 衣柜/设备 | 采集来源字段统一，订单索引方向正确 | 订单索引不是唯一，幂等只能靠应用；`wardrobe_category` 无索引；死列 `purchase_company` |
 | 通知 | 投递状态机、重试、加密载荷设计合理 | 配置/偏好缺唯一键和索引；`dedup_key` 无唯一约束；重试索引首列不是 `channel` |
@@ -316,7 +316,7 @@ V20261028_02 统一了 `sort_order`、`remark`、`is_enabled` 的**命名**，�
 
 ### 阶段 0：先做数据核查，不碰结构
 
-1. 查有效重复：`user.username`、`user.email`、`user_bind`、`notification_*`、`system_config`、`api_key`、`bank_card`、`b_video`、`sys_menu.path`、`cbti_personality.code`。
+1. 查有效重复：`user.username`、`user.email`、`user_bind`、`notification_*`、`sys_config`、`api_key`、`bank_card`、`b_video`、`sys_menu.path`、`cbti_personality.code`。
 2. 查删除值：各表 `is_deleted` 是否只有 0/1，`is_enabled` 是否有 NULL，`create_time/update_time` 是否有 NULL。
 3. 查孤儿：`time_record.category_id`、`file.biz_id`、`task_detail.task_id`、`thought_rela_event.thought_id`。
 4. 查时区：`@@global.time_zone`、`@@session.time_zone`、`NOW()`、`UTC_TIMESTAMP()` 与应用日志时间对照。
@@ -341,7 +341,7 @@ V20261028_02 统一了 `sort_order`、`remark`、`is_enabled` 的**命名**，�
 
 ### 阶段 3：P3（持续治理）
 
-1. 删除冗余/未使用索引，补 `performance` 排序，减少 `SELECT *`/N+1。
+1. 删除冗余/未使用索引，补 `event_record` 排序，减少 `SELECT *`/N+1。
 2. 文档修正：`login_log.ip_address`、user 索引清单、`bank_card_cover_template`、`record_article` 状态、`time_record` 0–1440。
 3. 加契约测试：实体全字段查询已有；建议增加
    - `SchemaContractTest`：唯一键/索引存在性；

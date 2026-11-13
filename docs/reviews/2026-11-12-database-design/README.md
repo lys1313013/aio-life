@@ -36,12 +36,12 @@
 
 | 整改 | 结果 |
 | --- | --- |
-| 核心业务唯一键改为部分唯一索引（`WHERE is_deleted = 0`） | `user`、`user_bind`、`notification_*`、`system_config`、`api_key`、`b_video`、字典、银行卡指纹与标签关联均已覆盖；`ON CONFLICT` 之外还需见 P1-1 |
-| 软删除后重建菜单 / 人格 / 地区 / 定时任务 / 导出任务 | `sys_menu.path`、`cbti_personality.code`、`system_region.code`、`sys_scheduled_job.job_code`、`data_export_job(user_id, request_key)` 已改部分唯一，[V20261112_01:122-141](../../../aio-life-server/sql/migrations/V20261112_01__p1_unique_constraints_and_collations.sql#L122-L141) |
+| 核心业务唯一键改为部分唯一索引（`WHERE is_deleted = 0`） | `user`、`user_bind`、`notification_*`、`sys_config`、`api_key`、`b_video`、字典、银行卡指纹与标签关联均已覆盖；`ON CONFLICT` 之外还需见 P1-1 |
+| 软删除后重建菜单 / 人格 / 地区 / 定时任务 / 导出任务 | `sys_menu.path`、`cbti_personality.code`、`sys_region.code`、`sys_scheduled_job.job_code`、`data_export_job(user_id, request_key)` 已改部分唯一，[V20261112_01:122-141](../../../aio-life-server/sql/migrations/V20261112_01__p1_unique_constraints_and_collations.sql#L122-L141) |
 | 财务日期查询修复 | `undated` / `likeRight(year)` 已移除，改为半开区间；[ExpController.java:82-96](../../../aio-life-server/src/main/java/top/aiolife/record/api/ExpController.java#L82-L96)、[IncomeController.java:73-80](../../../aio-life-server/src/main/java/top/aiolife/record/api/IncomeController.java#L73-L80) |
 | 时迹时间语义与约束 | `start_minute` / `end_minute` / `duration_minutes` 命名明确；`ck_time_record_time_range` 已校验范围、顺序和时长派生，[V20261112_04:136-139](../../../aio-life-server/sql/migrations/V20261112_04__remaining_constraints_and_cleanup.sql#L136-L139)。实测列重命名后约束定义已自动跟随 |
 | 死表死列清理 | `record_article*`、`enum_type`、`user_dict_type`、`device.purchase_company`、`time_tracker_category.code`、`honor_record.file_id` 已删除，[V20261112_04:142-151](../../../aio-life-server/sql/migrations/V20261112_04__remaining_constraints_and_cleanup.sql#L142-L151)；`CurrentSchema` 测试辅助同步登记 |
-| 同名不同单位列显式化 | 时迹、视频、演出时长列已重命名并同步实体、查询、导出与文档，[V20261112_05](../../../aio-life-server/sql/migrations/V20261112_05__rename_duration_units.sql) |
+| 同名不同单位列显式化 | 时迹、视频、活动时长列已重命名并同步实体、查询、导出与文档，[V20261112_05](../../../aio-life-server/sql/migrations/V20261112_05__rename_duration_units.sql) |
 | `user` 保留字处理 | 表已重命名为 `sys_user`，[V20261112_03](../../../aio-life-server/sql/migrations/V20261112_03__rename_user_table.sql)；实体与手写 SQL 已同步，未发现残留 `FROM "user"` |
 | 注册并发冲突 | `UserServiceImpl` 已捕获 `DuplicateKeyException` 并转为业务错误，[UserServiceImpl.java:552-577](../../../aio-life-server/src/main/java/top/aiolife/sso/service/impl/UserServiceImpl.java#L552-L577) |
 
@@ -94,7 +94,7 @@ INSERT 0 1
 | `wardrobe_category` | 无 | 按用户 + 父分类 | `(user_id, parent_id)` |
 | `login_log` | 无 | 注销按 `user_id` / `username + created_at` 清理 | `(user_id, created_at)`，必要时 `(created_at)` |
 | `device` | 采集订单索引 | 列表按用户 + 购买日期 | `(user_id, is_deleted, purchase_date, id)` |
-| `performance` | `(user_id, is_deleted, id)` | 缺少日期排序；分页无 `ORDER BY` | `(user_id, is_deleted, performance_date, id)` |
+| `event_record` | `(user_id, is_deleted, id)` | 缺少日期排序；分页无 `ORDER BY` | `(user_id, is_deleted, event_date, id)` |
 
 `notification_delivery` 的去重和重试索引也仍未按查询形态调整，见 P2-5。索引最终仍需在有数据量的 PostgreSQL 上 `EXPLAIN` 验证，本次只确认索引不存在。
 
@@ -226,13 +226,13 @@ TimeTrackerCategoryEntity logicDelete=false table=time_tracker_category
 | [SysDictDataVO.java:16](../../../aio-life-server/src/main/java/top/aiolife/record/pojo/vo/SysDictDataVO.java#L16) | `id` 是 `Integer`，而 `sys_dict_data.dict_code` 是雪花 `bigint`，MapStruct 会截断 |
 | [TimeRecordEntity.java:60](../../../aio-life-server/src/main/java/top/aiolife/record/pojo/entity/TimeRecordEntity.java#L60) | `isManual` 是 `Long`，列是 `smallint` |
 | [MilestoneEntity.java:25](../../../aio-life-server/src/main/java/top/aiolife/record/pojo/entity/MilestoneEntity.java#L25) | `date` 是 `String`，列是 `date` |
-| [PerformanceEntity.java:49](../../../aio-life-server/src/main/java/top/aiolife/record/pojo/entity/PerformanceEntity.java#L49) | `performanceDate` 是 `LocalDate`，列是 `timestamp(0)`，语义与精度不一致 |
+| [EventRecordEntity.java:49](../../../aio-life-server/src/main/java/top/aiolife/record/pojo/entity/EventRecordEntity.java#L49) | `eventDate` 是 `LocalDate`，列是 `timestamp(0)`，语义与精度不一致 |
 
 建议按列语义改回正确 Java 类型，并在接口契约中保持 ID 字符串输出。
 
 ### P2-9 排序与分页
 
-- [PerformanceRecordService.java:27](../../../aio-life-server/src/main/java/top/aiolife/record/service/PerformanceRecordService.java#L27) 分页没有 `ORDER BY`，跨页顺序未定义；应至少 `performance_date DESC, id DESC`。
+- [EventRecordService.java:27](../../../aio-life-server/src/main/java/top/aiolife/record/service/EventRecordService.java#L27) 分页没有 `ORDER BY`，跨页顺序未定义；应至少 `event_date DESC, id DESC`。
 - `expense` / `b_video` 等深分页仍是无上限页码；建议限制页码或改游标分页，并以唯一 ID 兜底。
 
 ### P2-10 排序规则范围需要逐列确认
@@ -245,7 +245,7 @@ TimeTrackerCategoryEntity logicDelete=false table=time_tracker_category
 
 因此 `sys_menu.path` 的 `/Foo` 与 `/foo` 会触发唯一键冲突（已实测），字典值、`data_export_job.request_key` 等标识符也受同样影响。`V20261112_01` 已把 API Key、BV 号、对象键、外部订单号等改为 `COLLATE "C"`，但没有处理菜单路径和字典值。建议逐列判定：路径 / 机器标识使用确定性排序，展示文本保留 ICU 不区分大小写（后续未采纳，见下条）；判定结果写入字段规范。
 
-2026-11-12 跟进：已新增 `V20261112_12__deterministic_identifier_collations.sql`（后续并入基线），把 `sys_menu.path`、`system_config.config_key`、三处 `dict_type`、两处 `dict_value`、`data_export_job.request_key`、`membership_provider.code`、`cbti_personality.code`、`sys_scheduled_job.job_code`、`system_region.code/parent_code` 改为 `COLLATE "C"`。复审时“展示文本保留 ICU”的建议未采纳：所有文本列使用数据库默认确定性排序，大小写不敏感只在查询层用 `ILIKE` 或 `lower()` 显式表达。判定规则见[数据库设计审查与字段规范](../../../aio-life-server/docs/数据库设计审查与字段规范.md)第 3.3 节。
+2026-11-12 跟进：已新增 `V20261112_12__deterministic_identifier_collations.sql`（后续并入基线），把 `sys_menu.path`、`sys_config.config_key`、三处 `dict_type`、两处 `dict_value`、`data_export_job.request_key`、`membership_provider.code`、`cbti_personality.code`、`sys_scheduled_job.job_code`、`sys_region.code/parent_code` 改为 `COLLATE "C"`。复审时“展示文本保留 ICU”的建议未采纳：所有文本列使用数据库默认确定性排序，大小写不敏感只在查询层用 `ILIKE` 或 `lower()` 显式表达。判定规则见[数据库设计审查与字段规范](../../../aio-life-server/docs/数据库设计审查与字段规范.md)第 3.3 节。
 
 ### P2-11 死字段与迁移说明
 
@@ -260,7 +260,7 @@ TimeTrackerCategoryEntity logicDelete=false table=time_tracker_category
 | 冗余索引 | `anniversary_record.idx_user_id`、`goal.idx_user_id`、`wardrobe_item.idx_user_id` 与更长索引最左前缀重复；`time_tracker_category_idx_category_user_template` 与新唯一索引重复 |
 | 低收益索引 | `b_video.idx_status` / `idx_aid` / `idx_title`、`honor_record.idx_honor_date` / `idx_category_id` 在已审查查询中未见筛选引用，删除前复核 |
 | `SELECT *` | `IBVideoMapper.findOwnedByBvid` / `lockOwned` 等；`b_video` 含大字段，二级索引回表成本高 |
-| N+1 | `HonorRecordController`、`PerformanceRecordService` 每条记录查一次附件，改 `biz_id IN (...)` |
+| N+1 | `HonorRecordController`、`EventRecordService` 每条记录查一次附件，改 `biz_id IN (...)` |
 | 系统消息发送者 | `message.sender_id NOT NULL`，[SystemNotificationSender.java:33](../../../aio-life-server/src/main/java/top/aiolife/record/notification/SystemNotificationSender.java#L33) 写死 `1L`；用户 ID 由雪花生成，1 不一定是有效账号 |
 | 目标逻辑删除 | `GoalEntity` 不继承 `BaseEntity`、无 `@TableLogic`，所有查询需手工带 `is_deleted` |
 | 软删唯一键 | `user_body_profile(user_id)` 仍是全量唯一；新增删除入口前必须改部分唯一或物理删除 |
@@ -279,7 +279,7 @@ TimeTrackerCategoryEntity logicDelete=false table=time_tracker_category
 4. **补 P1-6 数据预检**：对四张表和三个列做行数 / 非空检查；`honor_record.file_id` 先确认是否需转入 `file` 关系。
 5. **新增热点索引迁移**（P1-2）：优先 `expense`、`income`、`time_record`、`b_video`、`memo`、`thought`、`exercise_record`、`task_detail`、`wardrobe_category`、`login_log`、`notification_delivery`；在有数据量环境 `EXPLAIN` 后落地。
 6. **P2 批量**：业务 CHECK 与 DTO 校验、公共字段 NOT NULL、敏感字段加密 / 哈希、日志保留、文件模型收敛、ID 类型、排序规则逐列确认。
-7. **P3 持续治理**：删除冗余索引、减少 `SELECT *` / N+1、补 `performance` 排序、同步文档与导出目录。
+7. **P3 持续治理**：删除冗余索引、减少 `SELECT *` / N+1、补 `event_record` 排序、同步文档与导出目录。
 
 ## 八、验证边界与未覆盖项
 
@@ -299,7 +299,7 @@ TimeTrackerCategoryEntity logicDelete=false table=time_tracker_category
 | 项 | 处理 | 验证 |
 | --- | --- | --- |
 | P1-1 | `ScheduledJobMapper` 与 `IBVideoMapper` 的 `ON CONFLICT` 谓词改为与部分唯一索引一致 | 隔离 PostgreSQL 18 上重复执行 upsert：首次插入 1、重复 0；`PostgresqlRegressionIntegrationTest` 新增用例通过 |
-| P1-2 | 新增 `V20261112_07__hot_query_indexes.sql`，覆盖收支、时迹、视频、运动、备忘录、闪念、任务明细、衣柜分类、登录日志、设备和演出；`PerformanceRecordService` 补确定性排序 | 全链迁移成功，`pg_indexes` 确认索引存在 |
+| P1-2 | 新增 `V20261112_07__hot_query_indexes.sql`，覆盖收支、时迹、视频、运动、备忘录、闪念、任务明细、衣柜分类、登录日志、设备和活动；`EventRecordService` 补确定性排序 | 全链迁移成功，`pg_indexes` 确认索引存在 |
 | P1-3 | 删除 `TimeTrackerCategoryEntity.isDeleted` 重复声明，改由 `BaseEntity` 的 `@TableLogic` 生效；删除 `application.yml` 中不匹配的全局字段名配置 | `TableInfo` 实测 `logicDelete=true`；新增真实 PostgreSQL 删除用例通过 |
 | P1-4 | 从 `datasets.json` 与 `excluded-columns.json` 移除 `user_dict_type`；导出测试增加已删表断言 | `ExportDatasetRegistryTest` 3 项通过 |
 | P1-5 | 回退 `V20261110_01` 就地修改；新增 `V20261112_06` 统一 `is_deleted` 为 `smallint`、收窄 `wardrobe_item.file_id` | 空库全链迁移成功；`information_schema` 确认无 `integer` 的 `is_deleted` |
@@ -307,7 +307,7 @@ TimeTrackerCategoryEntity logicDelete=false table=time_tracker_category
 | P2-10 | 新增 `V20261112_12`（后续并入基线），把菜单路径、配置键、字典类型/键值、导出幂等键、平台/人格/定时任务/地区编码改为 `COLLATE "C"`；展示文本使用数据库默认确定性排序 | 当时 `mvn -o -f tools/flyway/pom.xml verify` 通过：25 个迁移、4 项集成测试；实测大小写变体可共存，等值与 `LIKE` 查询按字节匹配。合并后当前链为 13 个文件 |
 
 ```bash
-mvn -o test -Dtest=PostgresqlRegressionIntegrationTest,ExportDatasetRegistryTest,TimeTrackerCategoryServiceImplTest,TimeCategoryHierarchyTest,TimeTrackerCategoryCacheInvalidationTest,ScheduledJobTest,PerformanceFilesContractTest
+mvn -o test -Dtest=PostgresqlRegressionIntegrationTest,ExportDatasetRegistryTest,TimeTrackerCategoryServiceImplTest,TimeCategoryHierarchyTest,TimeTrackerCategoryCacheInvalidationTest,ScheduledJobTest,EventRecordFilesContractTest
 ```
 
 结果：64 项测试通过，0 失败。仓库自带 Flyway 校验 `mvn -f tools/flyway/pom.xml -o verify` 通过：24 项单元测试 + 4 项集成测试，当时空库执行 20 个迁移，重复迁移、增量升级、事务回滚与结构契约均通过。合并后当前链为 13 个文件。未覆盖：业务库存量、数据量级 `EXPLAIN`、应用启动、Web / 移动端实际页面。

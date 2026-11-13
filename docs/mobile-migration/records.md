@@ -123,10 +123,10 @@
 
 ### REC-09 活动
 
-证据：Web `my-hub/performance/index.vue`与编辑组件；Server `PerformanceController`、`PerformanceEntity`。
+证据：Web `my-hub/event-record/index.vue`与编辑组件；Server `EventRecordController`、`EventRecordEntity`。
 
-- [x] GET/POST/PUT `/performance`、DELETE `/{id}`；完整分页读取/活动类型/关键词筛选、总票价统计。
-- [x] performanceName/performer/performanceType/performanceDate/city/venue/ticketPrice/seatInfo/durationMinutes/rating/review/purchasePlatform/orderNumber、字典/附件预览上传/完整绑定列表。
+- [x] GET/POST/PUT `/event-records`、DELETE `/{id}`；完整分页读取/活动类型/关键词筛选、总票价统计。
+- [x] title/participants/eventType/eventDate/city/venue/ticketPrice/seatInfo/durationMinutes/rating/review/purchasePlatform/orderNumber、字典/附件预览上传/完整绑定列表。
 - [x] 第3处后端兼容修复恢复附件替换/清空闭环：未传保留、[]解绑而不删文件；所有绑定ID校验当前用户上传归属，已验证活动归属后事务内同步。
 
 ### REC-13 反馈中心
@@ -166,7 +166,7 @@
 
 - `aio-life-server/src/main/java/top/aiolife/record/api/ThoughtController.java`：旧逻辑只插入/修改事件，遗漏项不删除。新增完整事件列表的删除同步，条件限定 thoughtId；已验证更新成功才处理，删除前完成各事件归属校验，事务防止部分更新。未传/空/旧ID/新ID/跨闪念ID均有模拟回归。
 - `aio-life-server/src/main/java/top/aiolife/feedback/api/FeedbackController.java`：旧 GET 忽略平铺过滤条件；`listMy` 添加 `@QueryParams`，沿用现有泛型DTO URL绑定器。
-- `aio-life-server/src/main/java/top/aiolife/record/api/PerformanceController.java`：完整附件列表同步，新增/更新事务，当前用户文件归属校验，未传保留/空列表解除。新增 `PerformanceFilesContractTest` 5项覆盖。
+- `aio-life-server/src/main/java/top/aiolife/record/api/EventRecordController.java`：完整附件列表同步，新增/更新事务，当前用户文件归属校验，未传保留/空列表解除。新增 `EventRecordFilesContractTest` 5项覆盖。
 - `aio-life-server/src/main/java/top/aiolife/record/pojo/req/MovieReq.java`及`record/service/impl/MovieServiceImpl.java`：JsonSetter只标记实际rating入参，显式null通过用户/记录限定wrapper更新；省略不生成rating更新，未改全局字段策略。新增 `MovieRatingContractTest` 4项覆盖省略/null/数值/非法/外人记录。
 - 测试：新增 `ThoughtEventsContractTest.java`；扩展 `QueryHttpContractTest.java`，用 MockMvc 检查 `/feedback/my?page=3&pageSize=20&status=PENDING&feedbackType=BUG` 实际泛型绑定。
 
@@ -179,7 +179,7 @@
 - `node --test aio-life-mobile/tests/records*.test.mjs`：10/10通过，纯模拟。覆盖目标长ID/关联、周期边界、校验、待办排序与实际请求方法/路径/分页参数。
 - `npx playwright test tests/e2e/records-tasks.spec.js --workers=1 --reporter=line --output=test-results/records-run`：7/7通过，模拟API。目标390/768/1440深浅布局、保存失败保留与重试、父目标/行动计划/ID保留；待办明细完成/关注与关联保留。
 - 新增 `records-more.spec.js`：运动390/768/1440深浅布局与关联/失败恢复；设备、电影、活动、视频、闪念、笔记、纪念日、里程碑、荣誉、会员编辑保存及原关联保留；微信读书picker真实操作、详情进度、划线与关联想法。
-- `mvn test -Dtest=MovieRatingContractTest,PerformanceFilesContractTest,ThoughtEventsContractTest,QueryHttpContractTest -q`：46项通过，退出0，定向Mock/MockMvc，不连数据库。
+- `mvn test -Dtest=MovieRatingContractTest,EventRecordFilesContractTest,ThoughtEventsContractTest,QueryHttpContractTest -q`：46项通过，退出0，定向Mock/MockMvc，不连数据库。
 - 全部所辖页面常规SFC parse/compileScript/compileTemplate 已通过；简单类选择器检查已通过；整仓Vapor构建由主 Agent统一；后端联调、微信模拟器/真机、App Vapor真机未验证。
 
 ## 本批原生路由

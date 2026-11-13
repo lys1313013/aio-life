@@ -77,7 +77,7 @@ HOME-R01 至 HOME-R04、HOME-I01 至 HOME-I03 的工作内容与验收统一见 
 | REC-06 | 微信读书 | my-hub/weread/index.vue | 已完成 | /root/mobile_records |
 | REC-07 | 闪念 | my-hub/think/index.vue | 已完成 | /root/mobile_records |
 | REC-08 | 笔记 | my-hub/memo/index.vue | 已完成 | /root/mobile_records |
-| REC-09 | 活动 | my-hub/performance/index.vue | 已完成 | /root/mobile_records |
+| REC-09 | 活动 | my-hub/event-record/index.vue | 已完成 | /root/mobile_records |
 | REC-10 | 里程碑 | my-hub/milestone/index.vue | 已完成 | /root/mobile_records |
 | REC-11 | 纪念日 | my-hub/anniversary/index.vue | 已完成 | /root/mobile_records |
 | REC-12 | 荣誉中心 | my-hub/honor/index.vue | 已完成 | /root/mobile_records |
@@ -247,7 +247,7 @@ W4-A：/root/mobile_foundation 接续 BASE-10 公共图表与 GOODS-02 衣柜。
 - 随后微信小程序构建通过，当前输出总计1,888,698字节，尚未计入后续剩余页面；需要继续检查分包和最终体积。
 - 原生安全随机数补UTS插件：Android SecureRandom、iOS SecRandomCopyBytes；Swift系统实现经本机编译与合法/非法长度校验通过。UTS桥接及App运行仍未验证。
 
-- 活动附件同步补充授权：原后端更新只追加绑定、无法删除或清空附件，records负责PerformanceController最小契约修正（未传保留、[]清空、归属与事务），加定向测试；无真实数据写入。
+- 活动附件同步补充授权：原后端更新只追加绑定、无法删除或清空附件，records负责EventRecordController最小契约修正（未传保留、[]清空、归属与事务），加定向测试；无真实数据写入。
 
 - 本机环境实测：HBuilderX 5.26.2026091802（README旧记载4.87已校正），微信开发者工具2.01.2510290，完整Xcode与simctl不可用，adb不在PATH。当前编译器5.31 Alpha，App联编/真机缺匹配环境；微信开发者工具验证继续尝试，只做编译/只读页面，不执行真实业务写入。
 
