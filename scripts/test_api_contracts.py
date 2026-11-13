@@ -102,6 +102,44 @@ public class ChildFixture extends ParentFixture {
         for path in ("/tasks/reSort", "/taskDetails/reSort", "/taskColumn/reSort"):
             self.assertTrue(any(route["path"] == path and route["list"] for route in contracts.routes))
 
+    def test_response_payload_unwraps_envelopes(self):
+        self.assertEqual("GoalVO", contracts.response_payload("ApiResponse<GoalVO>"))
+        self.assertEqual("GoalVO", contracts.response_payload("ApiResponse<List<GoalVO>>"))
+        self.assertEqual("GoalVO", contracts.response_payload("ApiResponse<PageResp<GoalVO>>"))
+        self.assertEqual(
+            "BankCardVO.Bank", contracts.response_payload("ApiResponse<BankCardVO.Bank>")
+        )
+        for ret in (
+            "ApiResponse<Void>", "ApiResponse<Boolean>", "ApiResponse<String>",
+            "ApiResponse<JsonNode>", "ApiResponse<ObjectNode>",
+            "ApiResponse<Map<String, Object>>", "ApiResponse<List<Map<String, Object>>>",
+            "SseEmitter", "void",
+        ):
+            self.assertIsNone(contracts.response_payload(ret), ret)
+
+    def test_response_models_are_collected_from_controller_returns(self):
+        self.assertIn("GoalVO", contracts.response_models)
+        self.assertIn("WereadRecentVO", contracts.response_models)
+        # Request-only models never leak into the response section.
+        generated = contracts.render_responses()
+        self.assertNotIn("export interface MovieCreateReq", generated)
+
+    def test_null_fields_follow_the_serialization_contract(self):
+        generated = contracts.render_responses()
+        # GoalVO declares @JsonInclude(NON_NULL): nulls are omitted, so fields are optional.
+        self.assertIn("title?: string;", generated)
+        self.assertIn("isPinned?: number;", generated)
+        # Types without NON_NULL always include the key, null included.
+        self.assertIn("bankName: string | null;", generated)
+        # A component-level NON_NULL only affects that component.
+        self.assertIn("deepLink?: string;", generated)
+        self.assertIn("cover: string | null;", generated)
+
+    def test_nested_response_declarations_are_emitted(self):
+        generated = contracts.render_responses()
+        self.assertIn("export interface WereadRecentVO_Book {", generated)
+        self.assertIn("export interface BankCardVO_Tag {", generated)
+
     def test_clients_only_generate_canonical_pagination_names(self):
         for path in (
             "/tasks", "/movie/page", "/read-record/page", "/message/page",

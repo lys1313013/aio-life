@@ -39,7 +39,7 @@
 
 新增支出 `POST /expense` 可选传入 `deviceId`（已有设备 ID 字符串）或 `newDevice`（`DeviceCreateReq`），两者互斥；均为空时只记账。支出、新设备和关联关系在同一事务保存，失败全部回滚；关联时校验设备归属及设备墙二级锁。批量新增沿用同一字段语义。Web 与移动端新增表单先暂存选择，取消不写入，连续录入成功后清空设备选择；已有支出继续通过 `/expense/{expenseId}/device` 管理关联。
 
-`scripts/generate-api-contracts.py` 从后端请求模型生成 Web、移动端字段白名单及 TypeScript 类型。默认校验组中的 `@NotNull/@NotBlank/@NotEmpty` 对应必填、不可空字段；有默认值的字段可省略但不能显式置空。无条件必填与仅限特定校验组的限制不能混淆。
+`scripts/generate-api-contracts.py` 从后端请求模型和 Controller 返回类型生成 Web、移动端字段白名单及 TypeScript 类型。请求侧：默认校验组中的 `@NotNull/@NotBlank/@NotEmpty` 对应必填、不可空字段；有默认值的字段可省略但不能显式置空。响应侧：按 `ApiResponse<T>` 生成 `T` 的接口，`PageResp<T>` 与 `List<T>` 只取元素类型；类上标注 `@JsonInclude(NON_NULL)` 时字段可省略，否则字段始终存在、非原始类型再标注 `| null`；`Void`、标量、`Map` 和 `JsonNode` 不生成模型。无条件必填与仅限特定校验组的限制不能混淆。
 
 ```bash
 python3 scripts/generate-api-contracts.py

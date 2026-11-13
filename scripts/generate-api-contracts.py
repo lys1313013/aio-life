@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Generate Web/mobile request contracts from the backend's explicit API models.
+"""Generate Web/mobile request and response contracts from the backend's explicit API models.
 
 Run from any directory. --check detects drift without writing. Only declared
-request fields and actual GET filters are copied; dynamic third-party/MCP data
-remains dynamic. Requires the frontend's installed Prettier and ESLint for stable output.
+request fields, actual GET filters and Controller response types are copied;
+dynamic third-party/MCP data remains dynamic. Requires the frontend's installed
+Prettier and ESLint for stable output.
 """
 import argparse
 import subprocess
@@ -63,6 +64,9 @@ base=SRC/'top/aiolife'
 files={f.stem:f for f in sorted(base.rglob('*.java'))}
 models={}
 field_rules={}
+response_models={}
+response_non_null={}
+response_field_non_null={}
 virtual={}
 for filename,file in list(files.items()):
  text=file.read_text();masked=mask(text)
@@ -87,43 +91,94 @@ def field_rule(prefix, typ, defaulted=False):
  return {'required': required and not defaulted,
          'nullable': not required and typ not in ('boolean', 'int', 'long', 'double', 'float')}
 
-def collect(name):
- if name in models:return
+def collect(name,target=None,target_rules=None):
+ target=models if target is None else target
+ target_rules=field_rules if target_rules is None else target_rules
+ response=target is response_models
+ if name in target:return
  if name not in files:return
  p=files[name];s=virtual.get(name,p.read_text());masked=mask(s);data={}
- models[name]=data
- rules=field_rules.setdefault(name,{})
+ target[name]=data
+ rules=target_rules.setdefault(name,{})
  parent=re.search(r'public class \w+ extends (\w+)',s)
  if parent:
-  collect(parent[1]);data.update(models.get(parent[1],{}));rules.update(field_rules.get(parent[1],{}))
- # Remove annotations while preserving source positions, including type-use annotations inside List<>.
+  collect(parent[1],target,target_rules);data.update(target.get(parent[1],{}));rules.update(target_rules.get(parent[1],{}))
+ # A class-level NON_NULL omits null properties from the response, so they are
+ # optional rather than always present.
+ decl=re.search(r'public (?:static )?(?:final )?(?:class|record) '+re.escape(name)+r'\b',s)
+ head=s[:decl.start()] if decl else ''
+ boundary=max(head.rfind('{'),head.rfind('}'))
+ response_non_null[name]=(response_non_null.get(parent[1],False) if parent else False) or 'NON_NULL' in mask(s[boundary+1:len(head)])
  plain=without_annotations(s)
  structure=mask(plain)
+ scope=('/vo/','/entity/') if response else ('/req/','/query/')
  for m in re.finditer(r'(?:\b(?:private|protected|public)\s+)?((?:java\.[\w.]+|[A-Z][\w.]*|boolean|int)(?:<[\w<>., ?]+>)?)\s+(\w+)\s*(?:=[^;]+)?;',plain):
   before=masked[:m.start()]
   if before.count('{')-before.count('}')!=1:continue
   typ,field=m.groups()
   if field in ['parentIdSpecified','ratingProvided','avatarFileIdSpecified','providerIdProvided']:continue
   typ=re.sub(r'\s+',' ',typ).replace('< ','<').replace(' >','>')
-  data[field]=typ
   boundary=max(structure.rfind(';',0,m.start()),structure.rfind('{',0,m.start()),structure.rfind('}',0,m.start()))
-  rules[field]=field_rule(s[boundary+1:m.start()],typ,'=' in m[0])
+  prefix=s[boundary+1:m.start()]
+  if '@JsonIgnore' in mask(prefix):continue
+  if 'NON_NULL' in mask(prefix):response_field_non_null.setdefault(name,set()).add(field)
+  data[field]=typ
+  rules[field]=field_rule(prefix,typ,'=' in m[0])
   nested=re.sub(r'(?:java.util.)?List<([^>]+)>',r'\1',typ)
   if name+'_'+nested in virtual:
    typ=typ.replace(nested,name+'_'+nested);nested=name+'_'+nested;data[field]=typ
-  if nested in files and ('/req/' in str(files[nested]) or '/query/' in str(files[nested])):collect(nested)
- record=re.search(r'public record '+re.escape(name)+r'\s*\(',plain)
+  if nested in files and any(seg in str(files[nested]) for seg in scope):collect(nested,target,target_rules)
+ record=re.search(r'public record '+re.escape(name)+r'\s*(?:<[^>]*>)?\s*\(',plain)
  if record:
   end=close(mask(plain),record.end()-1,'(',')')
   for component,original in zip(split_params(plain[record.end():end]),split_params(s[record.end():end])):
    match=re.search(r'([\w<>., ?]+)\s+(\w+)\s*$',component.strip())
    if match:
     typ=re.sub(r'\s+',' ',match[1]).replace('< ','<').replace(' >','>')
+    nested=re.sub(r'(?:java.util.)?List<([^>]+)>',r'\1',typ)
+    if name+'_'+nested in virtual:
+     typ=typ.replace(nested,name+'_'+nested);nested=name+'_'+nested
     data[match[2]]=typ
     type_start=component.index(match[1])
+    if 'NON_NULL' in mask(original[:type_start]):response_field_non_null.setdefault(name,set()).add(match[2])
     rules[match[2]]=field_rule(original[:type_start],typ)
+    if nested in files and any(seg in str(files[nested]) for seg in scope):collect(nested,target,target_rules)
 
-routes=[]
+def resolve_model(name, src, stem):
+ if name in files:return name
+ if '.' in name:
+  outer,inner=name.rsplit('.',1)
+  parent=resolve_model(outer,src,stem)
+  return parent+'_'+inner if parent and parent+'_'+inner in files else None
+ # Imported nested request records can be referenced by their short Java name.
+ # Resolve only types declared in this controller or its explicit imports;
+ # never guess from unrelated same-named models elsewhere in the repository.
+ candidates={stem+'_'+name}&set(files)
+ for imported, wildcard in re.findall(r'import\s+(?:static\s+)?(\w+(?:\.\w+)*)(\.\*)?\s*;', src):
+  parts = imported.split('.')
+  candidate = parts[-1] + '_' + name if wildcard else '_'.join(parts[-2:])
+  if (wildcard or parts[-1] == name) and candidate in virtual:
+   candidates.add(candidate)
+ if len(candidates) == 1:return next(iter(candidates))
+ if len(candidates) > 1:raise ValueError(f'Ambiguous model {name}')
+ return None
+
+def response_payload(ret):
+ if not (ret.startswith('ApiResponse<') and ret.endswith('>')):return None
+ inner=ret[len('ApiResponse<'):-1].strip()
+ for wrapper in ('PageResp','List','Set','Collection'):
+  if inner.startswith(wrapper+'<') and inner.endswith('>'):
+   inner=inner[len(wrapper)+1:-1].strip();break
+ head=inner.split('<')[0].strip()
+ if head.startswith('java.util.'):head=head[len('java.util.'):]
+ # Scalars and untyped trees carry no VO of their own.
+ if head in ('Void','void','Boolean','boolean','String','Integer','int','Long','long','Double','double','Float','float','BigDecimal','Object','ObjectNode','JsonNode','Map','List'):
+  return None
+ # Type arguments are dropped: a parameterized declaration is emitted once, in
+ # its erased form, rather than monomorphized per call site.
+ return head
+
+routes=[];response_routes=0
 for p in sorted(base.rglob('*Controller.java')):
  s=p.read_text();pr=re.search(r'@RequestMapping\("([^"]*)"\)',s);prefix=pr[1] if pr else ''
  for m in methods(s):
@@ -133,30 +188,26 @@ for p in sorted(base.rglob('*Controller.java')):
    # JSON-tree endpoints (browser capture) validate their dynamic structure in
    # their own service. An empty generated DTO would silently erase that input.
    if name in ('ObjectNode', 'JsonNode'):continue
-   # Imported nested request records can be referenced by their short Java name.
-   # Resolve only types declared in this controller or its explicit imports;
-   # never guess from unrelated same-named models elsewhere in the repository.
-   if name not in files:
-    candidates = {p.stem + '_' + name} & files.keys()
-    for imported, wildcard in re.findall(r'import\s+(?:static\s+)?(\w+(?:\.\w+)*)(\.\*)?\s*;', s):
-     parts = imported.split('.')
-     candidate = parts[-1] + '_' + name if wildcard else '_'.join(parts[-2:])
-     if (wildcard or parts[-1] == name) and candidate in virtual:
-      candidates.add(candidate)
-    if len(candidates) == 1:name = next(iter(candidates))
-    elif len(candidates) > 1:raise ValueError(f'Ambiguous request model {name}: {p}')
-   if name not in files:raise ValueError(f'Unknown request model {name}: {m["verb"]} {prefix+m["path"]}')
+   resolved=resolve_model(name,s,p.stem)
+   if resolved is None:raise ValueError(f'Unknown request model {name}: {m["verb"]} {prefix+m["path"]}')
+   name=resolved
    collect(name);routes.append(dict(verb=m['verb'],path=prefix+m['path'],model=name,list=bool(arr)))
+  payload=response_payload(m['ret'])
+  if payload:
+   model=resolve_model(payload,s,p.stem)
+   if model:
+    response_routes+=1;collect(model,response_models,{})
 # InputSchema for MCP arguments, raw third-party predictions and menu metadata remain intentionally dynamic.
 # These endpoint payloads are already explicit DTOs; their nested data is not arbitrary persistence data.
-def ts_type(t):
- if t in models:return t
- if t.startswith(('List<','java.util.List<')):return 'Array<'+ts_type(t[t.index('<')+1:-1])+'>'
+def ts_type(t, known=None):
+ known = models if known is None else known
+ if t in known:return t
+ if t.startswith(('List<','java.util.List<')):return 'Array<'+ts_type(t[t.index('<')+1:-1],known)+'>'
  if t.startswith(('Map<','java.util.Map<')):return 'Record<string, unknown>'
  if t in ('String','LocalDate','LocalDateTime','Instant'):return 'string'
- if t=='Long':return 'string'
+ if t in ('Long','long'):return 'string'
  if t=='BigDecimal':return 'number | string'
- if t in ('Integer','int','Double','Float'):return 'number'
+ if t in ('Integer','int','Double','double','Float','float'):return 'number'
  if t in ('Boolean','boolean'):return 'boolean'
  if t=='ProgressStatusEnum':return "'not_started' | 'in_progress' | 'completed' | 'on_hold'"
  return 'unknown'
@@ -173,7 +224,7 @@ for p in sorted(base.rglob('*Controller.java')):
   if m['verb']!='GET':continue
   keys=[]
   for param in split_params(m['params']):
-   if any(annotation in param for annotation in ('@PathVariable', '@RequestHeader', '@CookieValue', '@RequestAttribute', '@SessionAttribute')):continue
+   if any(annotation in param for annotation in ('@PathVariable', '@RequestHeader', '@CookieValue', '@RequestAttribute', '@SessionAttribute', '@CurrentUserId')):continue
    q=re.search(r'CommonQuery<([\w.]+)>',param)
    if q:keys+=['page','pageSize']+names(q[1].split('.')[-1]);continue
    typed=re.search(r'(?:\b|\.)(\w+Query)\s+\w+\s*$',param)
@@ -257,7 +308,27 @@ export function pickPayloadList<K extends keyof ApiRequests>(name: K, values: un
  code='\n'.join(lines)
  extra='\nconst queryFields: Record<string, string[]> = '+json.dumps(queries,ensure_ascii=False,indent=2)+';\n'
  extra+='\nconst requestModels: Array<{ method: string; path: string; model: keyof ApiRequests; list: boolean }> = [\n'+''.join('  '+json.dumps(dict(method=r['verb'],path=r['path'],model=r['model'],list=r['list']))+',\n' for r in routes)+'];\n'
- return code+extra+request_helpers
+ return code+extra+request_helpers+render_responses()
+
+def render_responses():
+ # Emitted after the request contract so the request section stays a stable
+ # prefix of the generated file as endpoints are added.
+ known=set(models)|set(response_models)
+ lines=['\n/** 响应模型：Controller 返回类型对应的 VO，用于读取响应。 */']
+ for name,fields in sorted(response_models.items()):
+  if name in models:continue
+  lines.append(f'export interface {name} {{')
+  omitted=response_non_null.get(name,False)
+  per_field=response_field_non_null.get(name,set())
+  for key,t in fields.items():
+   if t in ('int','long','double','float','boolean'):
+    lines.append(f'  {key}: {ts_type(t,known)};')
+   elif omitted or key in per_field:
+    lines.append(f'  {key}?: {ts_type(t,known)};')
+   else:
+    lines.append(f'  {key}: {ts_type(t,known)} | null;')
+  lines.append('}\n')
+ return '\n'.join(lines)
 
 def main():
  parser = argparse.ArgumentParser(description=__doc__)
@@ -281,7 +352,7 @@ def main():
   if not dest.exists() or dest.read_text() != output:
    changed.append(str(dest.relative_to(ROOT)))
    if not args.check: dest.write_text(output)
- print(f'{len(models)} request models, {len(routes)} body routes, {len(queries)} GET routes')
+ print(f'{len(models)} request models, {len(response_models)} response models, {response_routes} typed responses, {len(routes)} body routes, {len(queries)} GET routes')
  if args.check and changed:
   raise SystemExit('Contract drift: ' + ', '.join(changed))
  print('Contracts match backend.' if args.check else 'Contracts generated.')
