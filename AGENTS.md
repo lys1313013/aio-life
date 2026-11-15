@@ -78,4 +78,4 @@ AIO Life — All-in-One 人生管理系统。本仓库保存项目文档、编�
 
 移动端触底分页、请求竞争控制、间距与排版唯一来源、分包依赖归属及微信包体预算，以 [Mobile 开发规范](aio-life-mobile/AGENTS.md)和其引用的配置为准；不能通过放宽预算、删除检查或关闭 Vapor 绕过限制。
 
-关系型业务仅支持 PostgreSQL 18+，生产访问统一使用 MyBatis-Plus / MyBatis Mapper，SQL 不进入 Service / Guard。中文注释、结构预检、Flyway 独立执行和已有库升级统一遵循[SQL 规范](aio-life-server/docs/SQL脚本规范.md)及[数据库初始化与验证](aio-life-server/docs/数据库初始化与验证.md)。敏感配置通过环境变量注入，详细命名与默认值由后端维护。
+关系型业务仅支持 PostgreSQL 18+，禁止创建数据库外键约束，关联完整性由应用层维护；具体要求见[SQL 规范](aio-life-server/docs/SQL脚本规范.md#5-字段与约束设计)。生产访问统一使用 MyBatis-Plus / MyBatis Mapper，SQL 不进入 Service / Guard。中文注释、结构预检、Flyway 独立执行和已有库升级统一遵循[SQL 规范](aio-life-server/docs/SQL脚本规范.md)及[数据库初始化与验证](aio-life-server/docs/数据库初始化与验证.md)。敏感配置通过环境变量注入，详细命名与默认值由后端维护。

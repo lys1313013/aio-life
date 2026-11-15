@@ -11,7 +11,7 @@
 | 首页卡片目录、配置、刷新与操作 | [首页功能说明](首页功能说明.md)、[今日时迹卡片](今日时迹卡片设计.md)、[新增业务卡片](首页新增业务卡片需求.md) |
 | 图标与颜色唯一来源 | [图标与颜色统一规则](图标与颜色统一规则.md) |
 | 后端结构与初始化 | [后端文档目录](../aio-life-server/docs/README.md)、[SQL 规范](../aio-life-server/docs/SQL脚本规范.md)、[数据库初始化](../aio-life-server/docs/数据库初始化与验证.md) |
-| 数据库设计与字段治理 | [设计审查、同义字段与冗余取舍](../aio-life-server/docs/数据库设计审查与字段规范.md) |
+| 数据库设计与字段治理 | [表结构优化清单与字段规范](../aio-life-server/docs/数据库设计审查与字段规范.md)、[附件与来源表设计](../aio-life-server/docs/附件与来源表设计.md) |
 | Web 组件与开发说明 | [Web 文档目录](../aio-life-front/docs/README.md)、[Web 开发规范](../aio-life-front/AGENTS.md) |
 | 移动端启动、平台构建与验收 | [Mobile README](../aio-life-mobile/README.md)、[E2E 维护与故障定位](../aio-life-mobile/docs/E2E测试维护与故障定位.md)、[迁移与验收目录](mobile-migration/README.md) |
 | 只读查询服务 | [Query README](../aio-life-query/README.md)、[原始需求与现状对照](<需求/AIO Life Query 智能数据查询服务需求方案.md>) |
@@ -43,8 +43,8 @@
 
 - [待办总览](待办任务.md)、[Mobile 全功能迁移清单](Mobile全功能迁移任务清单.md)、[迁移与验收分类索引](mobile-migration/README.md)。
 - [2026-10-03 架构与安全审查](reviews/2026-10-03-architecture-security/README.md)：原始发现、任务、修复和各阶段验证分别保留。
-- [2026-11-06 数据库设计审查](reviews/2026-11-06-database-design/README.md)：审查时的迁移结构、索引与唯一约束、软删除及清理建议；2026-11-08 整理证据边界，未连接目标业务库，整改未执行。
-- [2026-11-12 数据库设计复审](reviews/2026-11-12-database-design/README.md)：在 PostgreSQL 18 隔离库实测迁移链、部分唯一索引与 `ON CONFLICT`、逻辑删除初始化及排序规则；记录整改完成项和剩余 P1/P2，未连接业务库。
+- [2026-11-06 数据库审查历史证据](reviews/2026-11-06-database-design/README.md)：保留原 MySQL 环境和证据边界，已清理重复整改分析；当前问题以上方字段治理清单为准。
+- [2026-11-12 数据库复审与整改历史证据](reviews/2026-11-12-database-design/README.md)：保留隔离 PostgreSQL 18 验证和同日目标库执行记录，已清理完成项的重复分析；不代表 2026-11-13 重新验收。
 - 专题历史验收：[2026-10-25 个人数据导出](reviews/2026-10-25-personal-data-export/README.md)、[2026-11-06 首页阅读统计](reviews/2026-11-06-weread-stats/README.md)、[接口最小信息契约](reviews/2026-11-11-interface-contract-history/README.md)（原执行日期未注明，2026-11-11 仅为归档日期）。记录保留原结果和未验证项，不代表当前版本重新验收。
 - [早期安全审查](安全与架构审查报告.md)、[2026-09-12 表结构与复用评估](表结构与代码复用重构评估-2026-09-12.md)：历史快照，不能直接作为当前缺陷清单。
 - [GraphQL 早期评估](graphql-permission-design.md)：单体看板方案；当前独立 Hasura 查询服务见上方 Query 入口。
