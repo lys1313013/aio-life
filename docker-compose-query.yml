@@ -1,6 +1,6 @@
 # 独立启动：docker compose -f docker-compose-query.yml up -d --no-build
 # 配置与准备步骤见 README.md「独立启动 Query」。
-# 后端、PostgreSQL 和 Redis 由现有部署提供；Hasura/Connector 镜像与元数据须预先准备。
+# 后端、PostgreSQL 和 Redis 由现有部署提供；三种镜像均由 CI 发布到 ACR。
 name: aio-life-query
 
 services:
@@ -26,7 +26,7 @@ services:
       - aio-life
 
   hasura:
-    image: ${AIO_QUERY_ENGINE_IMAGE:?Set a verified Hasura v3 engine image}
+    image: ${AIO_QUERY_ENGINE_IMAGE:-crpi-yvha9coypdedaafa.cn-beijing.personal.cr.aliyuncs.com/lys1313013/aio-life-query:hasura-latest}
     restart: unless-stopped
     group_add:
       - "${AIO_QUERY_CONFIG_GID:?Set the group id that can read generated metadata}"
@@ -49,23 +49,19 @@ services:
     networks:
       - query
       - connector
-    depends_on:
-      - postgresql-connector
 
   postgresql-connector:
-    image: ${AIO_QUERY_CONNECTOR_IMAGE:-aio-life-query-postgresql-connector:local}
+    image: ${AIO_QUERY_CONNECTOR_IMAGE:-crpi-yvha9coypdedaafa.cn-beijing.personal.cr.aliyuncs.com/lys1313013/aio-life-query:connector-latest}
     restart: unless-stopped
     group_add:
       - "${AIO_QUERY_CONFIG_GID:?Set the group id that can read generated metadata}"
     environment:
-      JDBC_URL: ${AIO_QUERY_JDBC_URL:?Set a PostgreSQL JDBC URL with a dedicated readonly account}
+      CONNECTION_URI: ${AIO_QUERY_DATABASE_URL:?Set a PostgreSQL URI with a dedicated readonly account}
       HASURA_SERVICE_TOKEN_SECRET: ${AIO_QUERY_CONNECTOR_KEY:?Set an independent connector secret}
-      QUARKUS_OTEL_SDK_DISABLED: "true"
-      QUARKUS_HTTP_ACCESS_LOG_ENABLED: "false"
     volumes:
       - type: bind
-        source: ${AIO_QUERY_METADATA_DIRECTORY:-./aio-life-query/.cache/hasura}/configuration.json
-        target: /etc/connector/configuration.json
+        source: ${AIO_QUERY_METADATA_DIRECTORY:-./aio-life-query/.cache/hasura}
+        target: /etc/connector
         read_only: true
         bind:
           create_host_path: false

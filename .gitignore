@@ -30,3 +30,6 @@ test-results/
 # Python 编译缓存
 __pycache__/
 *.py[cod]
+
+# 部署配置备份包含内部密钥
+/backups/

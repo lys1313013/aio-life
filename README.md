@@ -99,7 +99,7 @@ ln -s "$(pwd)/skills/aio-life-api" "${CODEX_HOME:-$HOME/.codex}/skills/aio-life-
 
 1. 先启动现有业务后端及其依赖，确保主 Compose 创建的 `aio-life` 网络存在。Query 网关默认通过 `http://backend:45678/api/internal/query/access/check-token` 鉴权；Web 通过同一网络中的 `aio-life-query:45680` 访问 Query。已有网络名称不同可设置 `AIO_QUERY_BACKEND_NETWORK`。若后端位于其他主机，需配置实际内网 `AIO_QUERY_ACCESS_URL` 并预先创建 Query 网关与代理使用的共享网络。
 2. 在根目录 `.env` 中启用并填写 [.env.example](.env.example) 的 Query 配置，并确保已有 Redis 地址能从网关容器访问。后端设置 `AIO_LIFE_QUERY_ACCESS_ENABLED=true`，其服务密钥必须与 `AIO_QUERY_SERVICE_KEY` 一致；需要目标自动进度时配置 `AIO_LIFE_GOAL_QUERY_URL=http://aio-life-query:45680/graphql`。后端配置变化后，用原主 Compose 更新后端容器。
-3. 按 [Query 只读账号示例](aio-life-query/deploy/readonly-account.sql.example) 准备已有数据库的列级 SELECT 权限，配置容器可达的只读 JDBC URL。准备已验证的 `AIO_QUERY_ENGINE_IMAGE`、`AIO_QUERY_CONNECTOR_IMAGE`；默认 Connector 镜像是本机镜像，网关默认使用 ACR 的 `aio-life-query:latest`。现有 CI 仅发布网关，不能据此认为引擎和 Connector 镜像已发布。镜像构建方式与发布边界见 [Query 部署说明](aio-life-query/docs/Docker与GitHubActions.md#compose-使用发布镜像)。
+3. 按 [Query 只读账号示例](aio-life-query/deploy/readonly-account.sql.example) 准备已有数据库的列级 SELECT 权限，配置容器可达的只读 `AIO_QUERY_DATABASE_URL=postgresql://...`，凭据中的特殊字符需 URL 编码。三种镜像均由 Query CI 发布到 ACR，默认标签分别为 `latest`、`hasura-latest`、`connector-latest`；整套部署建议填写同一 commit 的固定标签或 digest。Hasura 与 Connector 基于固定版本的官方镜像，不在服务器编译。来源与发布流程见 [Query 部署说明](aio-life-query/docs/Docker与GitHubActions.md)。
 4. 克隆配套 `aio-life-query` 仓库后生成元数据。生成器不会自动加载 `.env`：先在当前终端安全注入与 `.env` 相同的 `AIO_QUERY_WEBHOOK_KEY`、`AIO_QUERY_CONNECTOR_KEY`，再执行下方命令。保持默认内部地址 `http://postgresql-connector:8080`、`http://aio-life-query:45680/internal/hasura/auth`；若当前终端已有 `AIO_QUERY_CONNECTOR_URL`、`AIO_QUERY_AUTH_WEBHOOK_URL`，须核对其值。将生成账号的 `id -g` 输出填入 `.env` 的 `AIO_QUERY_CONFIG_GID`。
 
 ```bash
@@ -114,7 +114,7 @@ Query 不声明对 Hasura 的 Compose 启动依赖，可分别启动和更新：
 
 ```bash
 # 启动 Hasura 及其 PostgreSQL Connector，不启动 Query。
-docker compose -f docker-compose-query.yml up -d --no-build hasura
+docker compose -f docker-compose-query.yml up -d --no-build hasura postgresql-connector
 # 只启动或更新 Query，不自动启动 Hasura。
 docker compose -f docker-compose-query.yml up -d --no-build aio-life-query
 ```
@@ -129,7 +129,15 @@ docker compose -f docker-compose-query.yml up -d --no-build aio-life-query
 
 脚本自动进入主仓库目录，检查 Compose 配置后，仅执行 `pull aio-life-query` 和 `up -d --no-deps --no-build --pull never aio-life-query`，最后显示该服务状态。镜像或配置变化时 Compose 会重建 Query 容器；未变化时保留现有容器。配置检查或镜像拉取失败时立即停止，不进入更新步骤。已提前导入或在部署主机准备本地镜像时，使用 `./scripts/update-query.sh --no-pull`；缺少本地镜像会明确失败，不会自动拉取。更新过程中不执行 `down`，不拉取、停止或重建 Hasura 和 Connector；若执行整套 `docker compose -f docker-compose-query.yml down`，仍会停止它们。该脚本适用于网关镜像更新，模型、关系或内部密钥变化仍须按下文同步元数据与相关服务。
 
-默认挂载 `aio-life-query/.cache/hasura/`，目录缺失时拒绝启动，不会自动创建空配置目录；远端部署可设置 `AIO_QUERY_METADATA_DIRECTORY` 指向安全传输后的元数据目录，无需保留源码。目录须允许 `AIO_QUERY_CONFIG_GID` 读取，生成文件含内部密钥，不能提交。字段、关系或相关密钥变化后须重新生成并部署匹配的配置；本文件与 Query 仓库的 `deploy/compose.yml` 二选一使用，不要同时运行。
+整套升级使用 [scripts/update-query-stack.py](scripts/update-query-stack.py)：先将配套 Query 源码切换到发布 commit，并将 `.env` 中三个镜像填写为该 commit 的 `sha-...`、`hasura-sha-...`、`connector-sha-...` 标签，再执行：
+
+```bash
+python3 scripts/update-query-stack.py
+```
+
+脚本先拉取全部镜像并核对三个镜像与源码的 commit，随后备份、重新生成元数据，重建三个 Query 组件并等待健康检查。它从 Compose 解析配置后私下传给生成器，不向终端输出密钥。此脚本适用于模型、Connector 或 Hasura 升级，会重建三个组件；日常网关更新继续使用 `update-query.sh`。`backups/` 中的配置备份含密钥，仅用于回滚，不得提交。
+
+默认挂载 `aio-life-query/.cache/hasura/`，目录缺失时拒绝启动，不会自动创建空配置目录；远端部署可设置 `AIO_QUERY_METADATA_DIRECTORY` 指向受保护的元数据目录；整套更新脚本需要同版本的 Query 源码生成配置。目录须允许 `AIO_QUERY_CONFIG_GID` 读取，生成文件含内部密钥，不能提交。字段、关系或相关密钥变化后须重新生成并部署匹配的配置；本文件与 Query 仓库的 `deploy/compose.yml` 二选一使用，不要同时运行。
 
 仅网关端口 `45680` 绑定宿主回环地址，Hasura 和 Connector 不发布宿主端口。Web 的 `/query-api/api/v1/` 可通过现有 Nginx 转发；外部 AI/MCP 使用 HTTPS 代理，仅转发 `/api/v1/`、`/graphql`、`/mcp`，内部鉴权端点不作为公网入口。网关审计保存在独立 `audit` 卷；Redis 的部署和持久化配置由现有实例管理。
 
