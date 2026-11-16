@@ -83,6 +83,56 @@ ln -s "$(pwd)/skills/aio-life-api" "${CODEX_HOME:-$HOME/.codex}/skills/aio-life-
 
 在本地 `.env` 中补齐后端配置，再使用 `docker compose up -d`。依赖地址必须能从容器访问，不能直接照抄示例中的 `localhost`；镜像仓库需要相应拉取权限。部署时将管理端口 `45679` 限制在受信网络，具体镜像构建和发布步骤见各端 README。
 
+### 独立启动 Query
+
+[docker-compose-query.yml](docker-compose-query.yml) 使用独立项目名 `aio-life-query`，单独管理以下三个容器，业务后端、PostgreSQL 和 Redis 使用现有部署：
+
+| 服务 | 职责 |
+| --- | --- |
+| `aio-life-query` | Query 的 REST、GraphQL HTTP 和 MCP 入口，调用现有业务后端鉴权 |
+| `hasura` | 配套 Hasura v3 引擎，执行模型及行列权限配置 |
+| `postgresql-connector` | 独立 HTTP 服务，将 Hasura 查询计划转换为 SQL，使用专用只读账号连接已有 PostgreSQL 18+ |
+
+调用链为 `aio-life-query → Hasura v3 → PostgreSQL Connector → PostgreSQL`。当前使用的 Hasura v3 通过 NDC 协议调用 Connector，Connector 需要独立运行。网关仍使用 Redis 保存一次性执行票据、限流和并发状态，但本文件不创建 Redis 容器，默认复用 `AIO_LIFE_REDIS_HOST/PORT/PASSWORD`；需要覆盖时设置 `AIO_QUERY_REDIS_HOST/PORT/PASSWORD`。当前 Query 键使用 `aioQuery:` 前缀，不读取后端的登录会话键；用户身份仍由业务后端鉴权接口判定。
+
+准备步骤：
+
+1. 先启动现有业务后端及其依赖，确保主 Compose 创建的 `aio-life` 网络存在。Query 网关默认通过 `http://backend:45678/api/internal/query/access/check-token` 鉴权；Web 通过同一网络中的 `aio-life-query:45680` 访问 Query。已有网络名称不同可设置 `AIO_QUERY_BACKEND_NETWORK`。若后端位于其他主机，需配置实际内网 `AIO_QUERY_ACCESS_URL` 并预先创建 Query 网关与代理使用的共享网络。
+2. 在根目录 `.env` 中启用并填写 [.env.example](.env.example) 的 Query 配置，并确保已有 Redis 地址能从网关容器访问。后端设置 `AIO_LIFE_QUERY_ACCESS_ENABLED=true`，其服务密钥必须与 `AIO_QUERY_SERVICE_KEY` 一致；需要目标自动进度时配置 `AIO_LIFE_GOAL_QUERY_URL=http://aio-life-query:45680/graphql`。后端配置变化后，用原主 Compose 更新后端容器。
+3. 按 [Query 只读账号示例](aio-life-query/deploy/readonly-account.sql.example) 准备已有数据库的列级 SELECT 权限，配置容器可达的只读 JDBC URL。准备已验证的 `AIO_QUERY_ENGINE_IMAGE`、`AIO_QUERY_CONNECTOR_IMAGE`；默认 Connector 镜像是本机镜像，网关默认使用 ACR 的 `aio-life-query:latest`。现有 CI 仅发布网关，不能据此认为引擎和 Connector 镜像已发布。镜像构建方式与发布边界见 [Query 部署说明](aio-life-query/docs/Docker与GitHubActions.md#compose-使用发布镜像)。
+4. 克隆配套 `aio-life-query` 仓库后生成元数据。生成器不会自动加载 `.env`：先在当前终端安全注入与 `.env` 相同的 `AIO_QUERY_WEBHOOK_KEY`、`AIO_QUERY_CONNECTOR_KEY`，再执行下方命令。保持默认内部地址 `http://postgresql-connector:8080`、`http://aio-life-query:45680/internal/hasura/auth`；若当前终端已有 `AIO_QUERY_CONNECTOR_URL`、`AIO_QUERY_AUTH_WEBHOOK_URL`，须核对其值。将生成账号的 `id -g` 输出填入 `.env` 的 `AIO_QUERY_CONFIG_GID`。
+
+```bash
+# 从主仓库目录执行；需要 Python 3 和配套 Query 源码。
+python3 aio-life-query/scripts/build_metadata.py
+docker compose -f docker-compose-query.yml config --quiet
+docker compose -f docker-compose-query.yml up -d --no-build
+docker compose -f docker-compose-query.yml ps
+```
+
+Query 不声明对 Hasura 的 Compose 启动依赖，可分别启动和更新：
+
+```bash
+# 启动 Hasura 及其 PostgreSQL Connector，不启动 Query。
+docker compose -f docker-compose-query.yml up -d --no-build hasura
+# 只启动或更新 Query，不自动启动 Hasura。
+docker compose -f docker-compose-query.yml up -d --no-build aio-life-query
+```
+
+这仅分开容器启动操作，查询执行仍依赖可用的 Hasura。默认使用同一 Compose 网络中的 `http://hasura:3000/graphql`；另行部署时可用 `AIO_QUERY_HASURA_URL` 覆盖，同时确保 Hasura 能访问元数据中的 Query 鉴权回调地址。
+
+日常仅更新 Query 镜像时，运行 [scripts/update-query.sh](scripts/update-query.sh)：
+
+```bash
+./scripts/update-query.sh
+```
+
+脚本自动进入主仓库目录，检查 Compose 配置后，仅执行 `pull aio-life-query` 和 `up -d --no-deps --no-build --pull never aio-life-query`，最后显示该服务状态。镜像或配置变化时 Compose 会重建 Query 容器；未变化时保留现有容器。配置检查或镜像拉取失败时立即停止，不进入更新步骤。已提前导入或在部署主机准备本地镜像时，使用 `./scripts/update-query.sh --no-pull`；缺少本地镜像会明确失败，不会自动拉取。更新过程中不执行 `down`，不拉取、停止或重建 Hasura 和 Connector；若执行整套 `docker compose -f docker-compose-query.yml down`，仍会停止它们。该脚本适用于网关镜像更新，模型、关系或内部密钥变化仍须按下文同步元数据与相关服务。
+
+默认挂载 `aio-life-query/.cache/hasura/`，目录缺失时拒绝启动，不会自动创建空配置目录；远端部署可设置 `AIO_QUERY_METADATA_DIRECTORY` 指向安全传输后的元数据目录，无需保留源码。目录须允许 `AIO_QUERY_CONFIG_GID` 读取，生成文件含内部密钥，不能提交。字段、关系或相关密钥变化后须重新生成并部署匹配的配置；本文件与 Query 仓库的 `deploy/compose.yml` 二选一使用，不要同时运行。
+
+仅网关端口 `45680` 绑定宿主回环地址，Hasura 和 Connector 不发布宿主端口。Web 的 `/query-api/api/v1/` 可通过现有 Nginx 转发；外部 AI/MCP 使用 HTTPS 代理，仅转发 `/api/v1/`、`/graphql`、`/mcp`，内部鉴权端点不作为公网入口。网关审计保存在独立 `audit` 卷；Redis 的部署和持久化配置由现有实例管理。
+
 ### SkyWalking（Compose 默认启用）
 
 后端两条镜像构建路径均内置固定版本的完整 Java Agent。[docker-compose.yml](docker-compose.yml) 已包含 Agent 启用参数和网络配置，部署只使用这一份文件。先启动 SkyWalking，确保其 Docker 网络和 OAP 已就绪，再发布并拉取包含 Agent 的后端镜像：
@@ -124,7 +174,7 @@ python3 scripts/push-repositories.py
 
 > 架构图为 2026-10-22 生成版本，存储层仍标注迁移前的 MySQL；当前实现使用 PostgreSQL 18+，重新生成提示词见 [docs/architecture/prompts.json](docs/architecture/prompts.json)。
 
-查询服务目前开放时迹、运动、阅读、影视、视频、演出六个数据集，提供 REST、GraphQL HTTP 和 MCP，支持时迹分类关系；通过原后端校验 Token／API Key。具体范围及部署限制见[查询服务说明](https://github.com/lys1313013/aio-life-query/blob/main/README.md)，图示不代表目标环境已部署全部可选服务。
+查询服务目前开放时迹、运动、阅读、影视、视频、活动及月收入七个数据集，提供 REST、GraphQL HTTP 和 MCP，支持时迹分类关系；通过原后端校验 Token／API Key。具体范围及部署限制见[查询服务说明](https://github.com/lys1313013/aio-life-query/blob/main/README.md)，图示不代表目标环境已部署全部可选服务。
 
 ## 目录结构
 

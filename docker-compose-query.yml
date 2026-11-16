@@ -1,0 +1,88 @@
+# 独立启动：docker compose -f docker-compose-query.yml up -d --no-build
+# 配置与准备步骤见 README.md「独立启动 Query」。
+# 后端、PostgreSQL 和 Redis 由现有部署提供；Hasura/Connector 镜像与元数据须预先准备。
+name: aio-life-query
+
+services:
+  aio-life-query:
+    image: ${AIO_QUERY_GATEWAY_IMAGE:-crpi-yvha9coypdedaafa.cn-beijing.personal.cr.aliyuncs.com/lys1313013/aio-life-query:latest}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:45680:45680"
+    environment:
+      AIO_QUERY_ACCESS_URL: ${AIO_QUERY_ACCESS_URL:-http://backend:45678/api/internal/query/access/check-token}
+      AIO_QUERY_MCP_ALLOWED_ORIGINS: ${AIO_QUERY_MCP_ALLOWED_ORIGINS:-}
+      AIO_QUERY_HASURA_URL: ${AIO_QUERY_HASURA_URL:-http://hasura:3000/graphql}
+      AIO_QUERY_SERVICE_KEY: ${AIO_QUERY_SERVICE_KEY:?Set the same key as backend AIO_LIFE_QUERY_ACCESS_SERVICE_KEY}
+      AIO_QUERY_WEBHOOK_KEY: ${AIO_QUERY_WEBHOOK_KEY:?Set an independent webhook secret}
+      # 默认复用后端 Redis，可单独覆盖容器可达的连接地址。
+      AIO_QUERY_REDIS_HOST: ${AIO_QUERY_REDIS_HOST:-${AIO_LIFE_REDIS_HOST:?Set an existing Redis host reachable from aio-life-query}}
+      AIO_QUERY_REDIS_PORT: ${AIO_QUERY_REDIS_PORT:-${AIO_LIFE_REDIS_PORT:-6379}}
+      AIO_QUERY_REDIS_PASSWORD: ${AIO_QUERY_REDIS_PASSWORD:-${AIO_LIFE_REDIS_PASSWORD:-}}
+    volumes:
+      - audit:/app/audit
+    networks:
+      - query
+      - aio-life
+
+  hasura:
+    image: ${AIO_QUERY_ENGINE_IMAGE:?Set a verified Hasura v3 engine image}
+    restart: unless-stopped
+    group_add:
+      - "${AIO_QUERY_CONFIG_GID:?Set the group id that can read generated metadata}"
+    command:
+      - --metadata-path
+      - /metadata/open_dd.json
+      - --authn-config-path
+      - /metadata/auth_config.json
+      - --ndc-response-size-limit
+      - "1000000"
+      - --request-body-limit
+      - "65536"
+    volumes:
+      - type: bind
+        source: ${AIO_QUERY_METADATA_DIRECTORY:-./aio-life-query/.cache/hasura}
+        target: /metadata
+        read_only: true
+        bind:
+          create_host_path: false
+    networks:
+      - query
+      - connector
+    depends_on:
+      - postgresql-connector
+
+  postgresql-connector:
+    image: ${AIO_QUERY_CONNECTOR_IMAGE:-aio-life-query-postgresql-connector:local}
+    restart: unless-stopped
+    group_add:
+      - "${AIO_QUERY_CONFIG_GID:?Set the group id that can read generated metadata}"
+    environment:
+      JDBC_URL: ${AIO_QUERY_JDBC_URL:?Set a PostgreSQL JDBC URL with a dedicated readonly account}
+      HASURA_SERVICE_TOKEN_SECRET: ${AIO_QUERY_CONNECTOR_KEY:?Set an independent connector secret}
+      QUARKUS_OTEL_SDK_DISABLED: "true"
+      QUARKUS_HTTP_ACCESS_LOG_ENABLED: "false"
+    volumes:
+      - type: bind
+        source: ${AIO_QUERY_METADATA_DIRECTORY:-./aio-life-query/.cache/hasura}/configuration.json
+        target: /etc/connector/configuration.json
+        read_only: true
+        bind:
+          create_host_path: false
+    networks:
+      - connector
+      - database-outbound
+
+networks:
+  query:
+    internal: true
+  connector:
+    internal: true
+  database-outbound: {}
+  # 复用主 Compose 的网络，让 backend / frontend 与 aio-life-query 按服务名互访。
+  aio-life:
+    external: true
+    name: ${AIO_QUERY_BACKEND_NETWORK:-aio-life}
+
+volumes:
+  audit: {}
