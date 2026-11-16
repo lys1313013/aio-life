@@ -8,7 +8,7 @@
 
 | 工具 | 能力 | 主要参数／限制 |
 | --- | --- | --- |
-| `time_record_queryByDateRange` | 读取日期范围时迹，含分类和精简运动明细 | `startDate`、`endDate`，日期字符串 |
+| `time_record_queryByDateRange` | 读取日期范围时迹，含分类、描述（`description`）和精简运动明细 | `startDate`、`endDate`，日期字符串 |
 | `time_record_save` | 新增一段时迹 | 可选 `categoryId/date/title/description/startMinute/endMinute`；显式起止须成对提供 |
 | `thought_save` | 新增闪念及关联事件 | `content`、`events[].content` |
 | `time_tracker_category_list` | 当前用户可见时迹分类 | 无参数 |
