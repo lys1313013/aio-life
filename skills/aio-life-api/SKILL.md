@@ -1,6 +1,6 @@
 ---
 name: aio-life-api
-description: 通过在线 OpenAPI 文档发现并调用 AIO Life REST 接口，查询或操作时迹、目标、待办、阅读、衣柜等生活数据。用于用户要求访问 AIO Life 数据、查找接口或生成调用代码时；普通项目源码开发不必使用。
+description: 通过在线 OpenAPI 文档发现并调用 AIO Life REST 接口，查询或操作时迹、目标、待办、阅读、衣橱等生活数据。用于用户要求访问 AIO Life 数据、查找接口或生成调用代码时；普通项目源码开发不必使用。
 ---
 
 # AIO Life 接口调用
