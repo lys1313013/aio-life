@@ -84,6 +84,7 @@
 ## 其他明确风险与生产待核实项
 
 - **已有明确安全债**：`sso/util/PasswordUtil.java:14-16` 使用一次 MD5(password+salt)，不具备现代慢哈希抗离线猜测能力；微信首次设密复用它。建议版本化迁移 Argon2id/bcrypt/scrypt 等合适密码哈希，旧密码验证成功后升级。
+  - **2026-11-17 实现更新**：当前密码工具已统一改为 bcrypt（成本 10），删除独立盐字段，不保留 MD5 验证或透明重哈希；旧 MD5 密码需重新设置。此处原结论保留为历史评估，数据库部署要求见[当前升级说明](../../../aio-life-server/docs/数据库初始化与验证.md#bcrypt-密码存储)。
 - **有意保留但仍有风险**：`UserServiceImpl.java:98-111` 将失败登录的明文密码写 `login_log.password`，源码标注既有产品决定。正常用户的拼写错误、旧密码、其他站点密码也会进入该表。此次不修改、不把“有意保留”解释为没有安全风险。
 - **API Key 日志**：`ApiKeyInterceptor.java:57,63` 记录完整无效/过期 Key。应只记录指纹；这些分支不是成功鉴权分支，不能据此断言全部有效 Key 都被日志泄漏。
 - **跨域/Cookie**：`CorsConfig.java:19-28` 为任意 Origin + credentials；`LoginSessionService.java:31-35` 手工添加业务 Cookie 未在调用处指定 Secure/HttpOnly/SameSite。跨站可利用性取决于浏览器 SameSite、API/Web 域名和代理覆写，不能未经浏览器验证声称任意站点必然读到数据。建议明确允许来源、明确 Cookie 属性，减少同时存在的 Token/Cookie 鉴权模式。

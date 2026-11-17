@@ -4,7 +4,7 @@
 
 - MBTI：POST `/mbti/test` 创建 devil.ai 外部测试；GET `/mbti/test/{testId}` 检查，测试完成 POST `/mbti/result` 自动保存（失败手动重试）；GET `/mbti/results` 历史、GET/DELETE `/mbti/result/{id}` 详情/删除；预测、意识/影子特质顺序、匹配与原结果页完整展示。未完成测试按账号ID保存，离页暂停轮询，返回继续检查。此测试源是外部网站，不能伪造本地问卷。
 - CBTI：GET `/cbti/questions,personalities`；每题选择、前后切换/题号跳转、完整回答校验，隐藏题 drink=coffee 时出现 drinkAttitude，POST `/cbti/test`；结果人格/相似度/15维和匹配详情、文字分享、海报；历史详情/删除、人格库浏览。
-- CBTI 管理：GET/POST `/cbti/admin/personalities`、PUT/DELETE `/{id}`；code/name/motto/color/vector/description/strengths/weaknesses/techStack/spirit/isSpecial/imageObject；15项向量0/1/2 L/M/H、JSON编辑；POST `/{code}/image` 图片上传，该接口返回 imageObject/imageUrl，无file.id，不能复用统一附件上传契约。
+- CBTI 管理：GET/POST `/cbti/admin/personalities`、PUT/DELETE `/{id}`；code/name/motto/color/vector/description/strengths/weaknesses/techStack/spirit/isSpecial；15项向量0/1/2 L/M/H、JSON编辑；POST `/{code}/image` 图片上传，图片按 `storage_object` 内容寻址并由 `attachment`（`biz_type = cbti_personality_image`）绑定，接口返回公开地址 `imageUrl`。
 - 注册：POST `/auth/sendEmailCode`、POST `/auth/register`（username/password/email/code）。找回：POST `/auth/sendResetPasswordCode`、POST `/auth/resetPassword`（email/password/code）。密码隐藏、确认相等、验证码等待、局部busy/失败保留；不自动登录。
 - 时间看板：日/周/月与前后时段、日期picker、分类多选/父子匹配；本期和前期同类总分钟对比、卡片统计、分类/类型/每日/趋势复用 TimeStatistics；分类含隐藏数据供历史分类匹配，隐藏分类不做追踪卡片。
 

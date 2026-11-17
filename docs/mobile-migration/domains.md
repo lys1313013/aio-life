@@ -11,7 +11,7 @@
 ## FIN-02 收入 `/pages/finance/income`
 
 - [x] 分页继续加载、年份/类型/日期范围筛选、日期/金额排序、已加载金额汇总。
-- [x] 新增、编辑、删除；amt/incTypeId/incDate/remark真实表单；更新保留 tax 等已有字段；后端返回false拒绝假成功。
+- [x] 新增、编辑、删除；grossAmount/incTypeId/incDate/remark真实表单；更新保留 taxAmount 等已有字段；后端返回false拒绝假成功。
 - [x] 页面内年度/月度按类型统计；切换周期和失败重试。
 - [x] API：GET `/income/query`、POST `/income`、PUT/DELETE `/income/{id}`、GET `/income/statisticsByYear|statisticsByMonth`；字典 `income_type`。
 - [x] 统计类别按钮定位对应年月/类别并查询记录。
@@ -19,7 +19,7 @@
 ## FIN-03 支出 `/pages/finance/expense`
 
 - [x] 分页、年份/类型/支付方式/日期/备注/交易对方/交易描述筛选、日期与金额排序、金额汇总。
-- [x] CRUD、选中批量删除、连续录入；transactionAmt与amt联动；日期/时间原生picker；更新保留transactionId/status/merchantOrderNo等导入字段。
+- [x] CRUD、选中批量删除、连续录入；transactionAmount与bookkeepingAmount联动；日期/时间原生picker；更新保留transactionId/status/merchantOrderNo等导入字段。
 - [x] 年度/月度类型统计与账单导入入口。
 - [x] API：GET `/expense/query`、POST/PUT `/expense`、DELETE `/expense/{id}`、POST `/expense/deleteBatch` `{idList}`、GET `/expense/statisticsByYear|statisticsByMonth`；字典 `exp_type/pay_type`。
 - [x] 统计类别按钮定位对应年月/类别并查询记录。

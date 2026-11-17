@@ -7,7 +7,7 @@
 ## ID 与基本类型
 
 - 业务 ID 在 JSON、路由、查询参数、表单和组件 key 中始终使用字符串，不经 `Number`、`parseInt` 或一元 `+` 转换。数值主键使用十进制字符串；UUID 等非数值标识保留原格式。
-- 附件对外标识统一为 `attachment.file_key`：带连字符的小写 UUIDv4。上传响应 `FileVO.id`、业务字段 `fileId/avatarFileId/coverFileId/fileIds` 及预览下载参数都使用它；内部 bigint `attachment.id` 与 `import_job.result_attachment_id` 不对外暴露，不提供数字附件标识兼容入口。公开图片仍按内容哈希寻址，私有文件逐次校验归属和业务权限。
+- 附件对外标识统一为 `attachment.file_key`：带连字符的小写 UUIDv4。上传响应 `AttachmentVO.id`、业务字段 `fileId/avatarFileId/coverFileId/fileIds` 及预览下载参数都使用它；内部 bigint `attachment.id` 与 `import_job.result_attachment_id` 不对外暴露，不提供数字附件标识兼容入口。公开图片仍按内容哈希寻址，私有文件逐次校验归属和业务权限。
 - 关系图谱的关系 ID 使用 Neo4j `elementId` 字符串，创建结果、人物详情及更新路径使用同一标识；调用方原样保存和传递，不解析其内部格式。旧的数字关系 ID 不再作为接口标识；这是已有关系的原生标识读取方式调整，不新增图数据库字段。
 - 必须定位已有资源的路径 ID 为必填，不能构造 `/undefined` 或空路径。创建请求不携带系统生成的 ID、用户归属或审计字段。
 - 第三方协议的数字字段、题目序号和业务数量不机械改成字符串。金额按接口声明使用十进制字符串或数字，不能把类型断言当作运行时转换。
