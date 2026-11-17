@@ -108,7 +108,7 @@
 证据：Web `my-hub/read-record/index.vue`与详情组件；Server `ReadRecordController`、`ReadRecordEntity`。
 
 - [x] GET `/read-record/page` 分页/标题/类型/状态筛选；根POST/PUT；GET/DELETE `/{id}`。
-- [x] 豆瓣解析 GET `/read-record/parse-douban`；真实字段标题/type/author/url/fileId/status/totalProgress/currentProgress/startTime/finishTime/remark完整编辑，图片上传预览；实体没有出版/ISBN/评分，不添加虚构字段。
+- [x] 豆瓣解析 GET `/read-record/parse-douban`；真实字段标题/type/author/url/fileId/status/totalProgress/currentProgress/startDate/finishDate/remark完整编辑，图片上传预览；实体没有出版/ISBN/评分，不添加虚构字段。
 
 ### REC-06 微信读书
 

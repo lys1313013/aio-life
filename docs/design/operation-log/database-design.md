@@ -17,7 +17,7 @@
 | `user_id` | BIGINT | 是 | NULL | 既有；服务端鉴权用户；ACCESS 失败登录允许为空 |
 | `username` | VARCHAR(100) | 否 | `''` | 既有；操作时用户名快照 |
 | `nickname` | VARCHAR(100) | 否 | `''` | 既有；操作时昵称快照，详情保留 |
-| `ip_address` | VARCHAR(64) | 否 | `''` | 既有；可信解析后的请求 IP，兼容 IPv4 / IPv6 |
+| `client_ip` | VARCHAR(45) | 否 | `''` | 既有列改名（原 `ip_address`）；可信解析后的客户端 IP，兼容 IPv4 / IPv6 |
 | `browser` | VARCHAR(100) | 否 | `''` | 既有；浏览器名称，详情保留 |
 | `function_name` | VARCHAR(200) | 是 | NULL | 既有；菜单或接口功能名称快照 |
 | `function_item` | VARCHAR(100) | 是 | NULL | 既有；查询、新增、修改、删除等操作类型 |
@@ -27,7 +27,7 @@
 | `request_params` | JSON | 是 | NULL | **新增**；脱敏后参数对象，逻辑大小上限 32 KiB |
 | `request_time` | DATETIME(3) | 是 | NULL | **新增**；服务端收到请求的时间，毫秒精度，`Asia/Shanghai` |
 | `duration_ms` | INT | 是 | NULL | **新增**；单调时钟计算的处理耗时，范围 0–2147483647 ms，Java Integer，接口 number |
-| `server_ip` | VARCHAR(64) | 是 | NULL | **新增**；处理请求的实例 IP，支持 IPv4 / IPv6 |
+| `server_ip` | VARCHAR(45) | 是 | NULL | **新增**；处理请求的实例 IP，支持 IPv4 / IPv6 |
 | `success` | TINYINT(1) | 否 | 1 | 既有；业务成功标记 |
 | `create_user` | BIGINT | 是 | NULL | 既有；审计创建人 |
 | `create_time` | DATETIME | 否 | CURRENT_TIMESTAMP | 既有；审计时间，审计日期，不代表精确落库完成时间 |
