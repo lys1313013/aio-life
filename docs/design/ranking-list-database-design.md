@@ -124,7 +124,7 @@ ranking_list ──← ranking_list_item ── creative_work_id ──→ creat
 
 两张个人记录表各保存 `platform varchar(32)`（外部系统编码，例如 `douban`）和 `external_key varchar(255)`（外部条目 ID）。数据库从 `url` 计算并持久化两列。已有链接在迁移时自动补齐，清空链接或换成不支持的链接时两列都为空。两张表都为有效记录建立 `(user_id, platform, external_key)` 索引。
 
-列表与详情直接按两列查共享作品。观影使用 `movie_subject`，阅读使用 `book_subject`，再由作品主键查询榜单明细。作品尚未登记时个人记录正常显示，之后入榜可直接查到排名。[外部标识迁移](../../aio-life-server/sql/migrations/V20261119_02__store_record_external_identity.sql)
+列表与详情直接按两列查共享作品。观影使用 `movie_subject`，阅读使用 `book_subject`，再由作品主键查询榜单明细。作品尚未登记时个人记录正常显示，之后入榜可直接查到排名。[当前建表脚本](../../aio-life-server/sql/migrations/V20261110_01__postgresql_schema.sql)
 
 ## 统一的本地优先流程
 
@@ -150,7 +150,7 @@ ranking_list ──← ranking_list_item ── creative_work_id ──→ creat
 
 ### 现有表 `external_resource` 图片来源
 
-沿用现有字段和约束。每行对应一个远程图片及规格，下载就绪后关联本地对象。[建表迁移](../../aio-life-server/sql/migrations/V20261116_11__attachment_sources_and_jobs.sql)
+沿用现有字段和约束。每行对应一个远程图片及规格，下载就绪后关联本地对象。[当前建表脚本](../../aio-life-server/sql/migrations/V20261110_01__postgresql_schema.sql)
 
 | 字段 | 类型 | 可空 | 默认值 | 说明 |
 | --- | --- | --- | --- | --- |

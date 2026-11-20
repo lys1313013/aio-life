@@ -1,6 +1,6 @@
 # Mobile 分类与管理端操作盘点及实现
 
-字段名称已按 2026-10-28 [统一契约](../../aio-life-server/docs/数据库设计审查与字段规范.md#31-已实施的字段统一2026-10-28)同步；下文“本批结果与验证边界”仍为原批次记录，不代表当前验证。
+字段名称已按 2026-10-28 的规则同步，当前约定见[字段规范](../../aio-life-server/docs/数据库设计审查与字段规范.md#排序与展示端)；下文“本批结果与验证边界”仍为原批次记录，不代表当前验证。
 
 Web 证据：`views/time/time-tracker/{category-config,admin}`、`views/config-management/{sysDictType,sysDictData}`、`views/system/{user,menu,user-dict,feedback,config,operation-log,access-log}`，及相应 `api/core`、`api/system`；后端 Controller 再核对管理员角色、排序、批量 action。
 
