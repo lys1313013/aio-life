@@ -16,6 +16,7 @@
 | 移动端启动、平台构建与验收 | [Mobile README](../aio-life-mobile/README.md)、[E2E 维护与故障定位](../aio-life-mobile/docs/E2E测试维护与故障定位.md)、[迁移与验收目录](mobile-migration/README.md) |
 | 只读查询服务 | [Query README](../aio-life-query/README.md)、[原始需求与现状对照](<需求/AIO Life Query 智能数据查询服务需求方案.md>) |
 | 浏览器采集 | [插件 README](../aio-life-chrome-plugin/README.md)、[后端采集契约](../aio-life-server/docs/浏览器采集接口.md) |
+| 登录与邮箱验证码 | [认证限流与可信代理](../aio-life-server/README.md#认证限流与可信代理)、[菜单二级锁](菜单锁需求方案.md) |
 
 上述相对路径适用于标准工作区；独立克隆某一子仓库时，其他仓库不会自动出现。仓库地址见[主 README](../README.md)。
 

@@ -7,15 +7,17 @@
 | MobileButton | `label: string` 必填，`icon?: string`、`loading?: boolean`、`disabled?: boolean`、`danger?: boolean`、`variant?: 'primary' \| 'quiet'` | `click`；default slot 可替换文字；icon 存在时只显示图标，label 始终为可访问名称 |
 | ConfirmAction | `label: string`、`message?: string`、`action: () => Promise<unknown>`、`icon?: string`（默认 ×）、`danger?: boolean` | `success(result)`；异步 action 失败保留确认与错误，成功关闭；同一时刻只允许一次执行 |
 | FormField | `label: string`、`modelValue?: string`、`kind?: 'text' \| 'textarea' \| 'date' \| 'time' \| 'selector'`、`options?: string[]`、`error?: string`、`disabled?: boolean`、`placeholder?: string`、`password?: boolean`、`inputType?: string`（number/digit 等）；`kind='password'` 自动隐藏 | `update:modelValue(string)`；default slot 可替换内置输入（数字、复杂选择器等），校验错误由业务页提供 |
-| PageState | `loading?: boolean`、`error?: string`、`empty?: boolean`、`emptyText?: string` | `retry`；default slot 始终保留，加载/失败不清空已有数据 |
+| PageState | `loading?: boolean`、`error?: string`、`empty?: boolean`、`emptyText?: string`、`hasContent?: boolean` | `retry`，首次加载展示骨架，刷新保留已加载内容或空态，更新提示与重试浮动显示 |
 | MobilePage | `refreshing?: boolean` | `refresh`；default 为滚动内容，`fixed` slot 为不随列表滚动的悬浮操作；业务 finally 必须结束 refreshing |
-| LoadMore | `loading?: boolean`、`hasMore?: boolean` | `load`；使用点击继续加载，无悬停依赖 |
+| LoadMore | `loading?: boolean`、`hasMore?: boolean`、`error?: string` | 滚动容器触底发起分页。尾部只在请求中或出错时展示，点击重试触发 `load`，调用方保留已有内容并请求失败页 |
 | MetricCard | `label: string`、`value: string \| number`、`unit?: string` | 简单指标，无图表库依赖 |
 | AdaptiveModal | 兼容 `label`、`busy?`、`maxWidth?`、`contentKey?`；新增 `showClose?`（默认 true） | `close`；default 内容；busy 禁止关闭，内部滚动并扣除键盘、安全区 |
 
 `src/services/mobile-ui.ts` 提供 `createLatestTask`：每次请求使用 token，仅当前 token 能应用结果；`invalidate()` 在离页或卸载时使旧结果失效。`createAsyncAction(reactive({loading:false,error:''}))` 防重复操作并暴露 loading/error，失败不修改表单。调用方仍负责业务数据和权限。
 
 确认操作直接位于触发按钮下方，同处卡片/行容器，宽度受可用窗口约束，未使用浏览器 DOM。按钮至少 44px；长内容由 MobilePage 和 AdaptiveModal 滚动。深浅色通过主题类，桌面内容最大宽度 960px，中间宽度平板连续适配。状态栏与微信胶囊继续由现有 PageHeader 负责，避免重复占位。
+
+业务原生按钮的底色复用 `button-background`，在 H5、微信和 App 保留禁用与加载状态下的主题底色。加载期间禁止重复点击。[平台样式](../../aio-life-mobile/src/styles/platform.scss)
 
 验证边界：本契约不等于微信或 App 真机验收。Web、微信编译和真机应分别记录；MiniChart 已接入时间、财务、运动与衣柜统计，参见下方契约。
 
