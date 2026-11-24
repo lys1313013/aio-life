@@ -2,7 +2,7 @@
 
 All-in-One 人生管理系统，围绕时迹、目标与待办，管理阅读、运动、财务、物品、会员及其他生活记录，提供首页看板、统计和数据导出。
 
-项目仍在开发中。本仓库维护跨端需求、技术方案、编排配置和开发脚本；各客户端与服务使用独立 Git 仓库。先运行业务后端，再按需要启动 Web、移动端或附加服务。
+项目仍在开发中。本仓库维护跨端需求、技术方案、编排配置和开发脚本。各客户端与服务使用独立 Git 仓库。
 
 ## 仓库与文档
 
@@ -28,29 +28,25 @@ cd aio-life
 
 脚本通过 SSH 克隆 Web、后端和移动端。查询服务与浏览器插件按上表单独克隆到同名目录；初始化和更新脚本不包含它们。主仓库不跟踪子仓库文件或提交指针。当前 `aio-life-mac/` 仅为空目录，尚无可启动项目。
 
-先按[后端 README](https://github.com/lys1313013/aio-life-server/blob/main/README.md)准备数据库、Redis、环境变量及业务库结构，再在独立终端分别启动。以下命令均从主仓库目录开始执行：
+先按后端 README 准备数据库、Redis、环境变量及业务库结构，再从主仓库安装客户端依赖。[后端 README](https://github.com/lys1313013/aio-life-server/blob/main/README.md)
 
 ```bash
-# 后端：API 45678，context-path /api；管理端点 45679
-cd aio-life-server
-mvn spring-boot:run
+(cd aio-life-front && corepack enable && pnpm install --frozen-lockfile)
+(cd aio-life-mobile && npm ci)
 ```
 
-```bash
-# Web：Node 版本见 Web README，Corepack 按 packageManager 选择 pnpm
-cd aio-life-front
-corepack enable
-pnpm install --frozen-lockfile
-pnpm run dev:antd
-```
+移动端需要覆盖默认配置时，可将 `aio-life-mobile/.env.example` 复制为 `aio-life-mobile/.env.local` 后编辑。准备完成后，在主仓库一键启动后端、Web 和移动端 H5。
 
 ```bash
-# 移动端 H5：5180，默认代理本地后端 45678
-cd aio-life-mobile
-npm ci
-# 仅首次创建；随后按需编辑 .env.local
-test -f .env.local || cp .env.example .env.local
-npm run dev
+./start.sh
+```
+
+三个服务的日志输出到当前终端。按 `Ctrl+C` 停止全部服务，任一服务退出时脚本也会停止其余服务。也可以单独启动其中一个服务。
+
+```bash
+./aio-life-server/start.sh
+./aio-life-front/start.sh
+./aio-life-mobile/start.sh
 ```
 
 默认本地入口如下；端口被覆盖时以启动日志为准：

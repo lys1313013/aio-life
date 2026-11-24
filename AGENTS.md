@@ -29,6 +29,7 @@ AIO Life — All-in-One 人生管理系统。本仓库保存项目文档、编�
 ```bash
 ./scripts/setup-repositories.sh   # 克隆缺失的 Web、后端和移动端仓库
 ./scripts/pull-latest-main.sh     # 快进拉取三个仓库的 origin/main
+./start.sh                        # 一键启动后端、Web 和移动端 H5
 ```
 
 拉取脚本要求子仓库处于 `main` 且工作区干净；不满足时先处理当前工作，不为拉取而丢弃修改。
