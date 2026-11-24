@@ -70,7 +70,7 @@
 ## REL-01 `/pages/relationship/index`
 
 - [x] 图谱数据、触屏人物/关系列表、搜索与分类；人物CRUD/详情（name/avatar/category/description/tags/birthday/phone/email/school/socialLinks/notes）保留字段；关系CRUD/目标/类型/方向/说明/标签。
-- [x] GET `/relationships/graph`、`persons/search?keyword`、`persons/{id}`；POST/PUT/DELETE `/relationships/persons/{id?}`、POST/PUT `/relationships/{id?}`、DELETE `/relationships` body保留源/目标/类型；后端继续负责用户隔离与Neo4j开关。
+- [x] GET `/relationships/graph`、`persons/search?keyword`、`persons/{id}`；POST/PUT/DELETE `/relationships/persons/{id?}`、POST `/relationships`、PUT/DELETE `/relationships/{id}` 使用关系 elementId；后端继续负责用户隔离与Neo4j开关。
 - [x] 纯view触屏拓扑、节点连线/拖动/缩放/复位/点击详情；长姓名单行截断且按钮可访问名称保留全名；同名选择显示ID。
 - [ ] 原生图谱手势真机验收；头像沿用WebURL字段，无新增上传API。
 

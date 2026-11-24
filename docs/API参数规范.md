@@ -38,6 +38,14 @@
 - 校验必须在 HTTP 入参边界生效；嵌套对象和列表需要级联校验，公共分页也必须检查范围，不能只有未被触发的注解。
 - 参数格式、类型、缺失或范围错误使用参数错误业务码和可读提示，客户端仍须检查业务码，不能仅判断 HTTP 状态。
 
+### 局部更新与游标示例
+
+- 人物关系更新和删除均通过 `/relationships/{id}` 定位单条关系，`id` 为详情中的关系 elementId。更新仅写入提交的非 null 字段，可用空字符串清空描述或标签。
+- 设备更新省略 `fileId` 保留图片，传 `null` 解除关联。设备名称、购买价格与购买／结束日期的约束适用于独立创建、随支出新建及后续编辑。
+- 更新订阅只需提交 `id` 与变更字段。仅修改备注保留现有日期和费用；修改价格或周期且未指定月均金额时，按更新后的价格及周期重新计算。
+- 新增收入必须提交 `grossAmount/incomeDate/incomeTypeId`；新增支出必须提交 `bookkeepingAmount/expenseTime/expenseTypeId`。未记录的原始交易金额 `transactionAmount` 保持为空，更新时显式传 `null` 可清除。
+- 每日运动汇总 `GET /exerciseRecord/dashboardSummary` 使用返回的 `lastDate` 作为下一页游标，`pageSize` 默认 7，范围 1–30。
+
 ## 契约生成与验证
 
 新增支出 `POST /expense` 可选传入 `deviceId`（已有设备 ID 字符串）或 `newDevice`（`DeviceCreateReq`），两者互斥；均为空时只记账。支出、新设备和关联关系在同一事务保存，失败全部回滚；关联时校验设备归属及设备墙二级锁。批量新增沿用同一字段语义。Web 与移动端新增表单先暂存选择，取消不写入，连续录入成功后清空设备选择；已有支出继续通过 `/expense/{expenseId}/device` 管理关联。
