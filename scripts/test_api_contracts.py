@@ -124,6 +124,12 @@ public class ChildFixture extends ParentFixture {
         generated = contracts.render_responses()
         self.assertNotIn("export interface MovieCreateReq", generated)
 
+    def test_documentation_page_uses_json_count_and_typed_items(self):
+        generated = contracts.render_responses()
+        page = generated.split("export interface DocumentationVO_OperationPage {", 1)[1].split("}", 1)[0]
+        self.assertIn("total: number;", page)
+        self.assertIn("items: Array<DocumentationVO_OperationSummary> | null;", page)
+
     def test_null_fields_follow_the_serialization_contract(self):
         generated = contracts.render_responses()
         # GoalVO declares @JsonInclude(NON_NULL): nulls are omitted, so fields are optional.

@@ -21,6 +21,12 @@
 - 完整列表通过逐页收集获得；不能使用负数、零或超大页大小取消分页。失败保留已加载内容和失败页，重试不能跳页；有明确总数时按总数判断结束，无总数时按空页或短页判断。
 - 分页查询必须具有稳定顺序，业务排序字段相同时追加唯一 ID；偏移使用不会溢出的计算，超末页返回空列表，不构造空 `IN` 查询。
 
+Web 消息中心通过 `GET /message/conversations` 读取会话摘要，再通过 `GET /message/conversations/{peer}/messages` 读取选中会话。历史按消息 ID 降序返回，下一页传入本页最后一个消息的 `beforeId`，系统会话的 `peer` 为 `system`。会话级已读和删除分别使用 `PUT /message/conversations/{peer}/read` 和 `DELETE /message/conversations/{peer}`。
+
+移动待办使用 `GET /taskDetails/batch` 批量读取清单明细，`taskIds` 为重复的查询参数，每次最多 50 个字符串 ID。空清单在响应中没有明细，客户端按 `taskId` 分组。
+
+独立 Query 的完整目录依赖业务后端在 `dataset=catalog` 的授权结果中返回 `allowedDatasets`。部署时先更新业务后端，再更新 Query 网关。
+
 ## 日期与时间
 
 - 日期：`2026-10-22`，格式 `yyyy-MM-dd`。
@@ -50,7 +56,7 @@
 
 新增支出 `POST /expense` 可选传入 `deviceId`（已有设备 ID 字符串）或 `newDevice`（`DeviceCreateReq`），两者互斥；均为空时只记账。支出、新设备和关联关系在同一事务保存，失败全部回滚；关联时校验设备归属及设备墙二级锁。批量新增沿用同一字段语义。Web 与移动端新增表单先暂存选择，取消不写入，连续录入成功后清空设备选择；已有支出继续通过 `/expense/{expenseId}/device` 管理关联。
 
-`scripts/generate-api-contracts.py` 从后端请求模型和 Controller 返回类型生成 Web、移动端字段白名单及 TypeScript 类型。请求侧：默认校验组中的 `@NotNull/@NotBlank/@NotEmpty` 对应必填、不可空字段；有默认值的字段可省略但不能显式置空。响应侧：按 `ApiResponse<T>` 生成 `T` 的接口，`PageResp<T>` 与 `List<T>` 只取元素类型；类上标注 `@JsonInclude(NON_NULL)` 时字段可省略，否则字段始终存在、非原始类型再标注 `| null`；`Void`、标量、`Map` 和 `JsonNode` 不生成模型。无条件必填与仅限特定校验组的限制不能混淆。
+`scripts/generate-api-contracts.py` 从后端请求模型和 Controller 返回类型生成 Web、移动端字段白名单及 TypeScript 类型。请求侧：默认校验组中的 `@NotNull/@NotBlank/@NotEmpty` 对应必填、不可空字段；有默认值的字段可省略但不能显式置空。响应侧：按 `ApiResponse<T>` 生成 `T` 的接口，`PageResp<T>` 与 `List<T>` 只取元素类型；字段使用 `CountSerializer` 时生成数字类型。类上标注 `@JsonInclude(NON_NULL)` 时字段可省略，否则字段始终存在、非原始类型再标注 `| null`；`Void`、标量、`Map` 和 `JsonNode` 不生成模型。无条件必填与仅限特定校验组的限制不能混淆。
 
 ```bash
 python3 scripts/generate-api-contracts.py

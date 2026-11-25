@@ -67,6 +67,7 @@ field_rules={}
 response_models={}
 response_non_null={}
 response_field_non_null={}
+response_field_types={}
 virtual={}
 for filename,file in list(files.items()):
  text=file.read_text();masked=mask(text)
@@ -122,6 +123,8 @@ def collect(name,target=None,target_rules=None):
   prefix=s[boundary+1:m.start()]
   if '@JsonIgnore' in mask(prefix):continue
   if 'NON_NULL' in mask(prefix):response_field_non_null.setdefault(name,set()).add(field)
+  if response and re.search(r'@JsonSerialize\s*\([^)]*\bCountSerializer\.class', mask(prefix)):
+   response_field_types[name,field]='number'
   data[field]=typ
   rules[field]=field_rule(prefix,typ,'=' in m[0])
   nested=re.sub(r'(?:java.util.)?List<([^>]+)>',r'\1',typ)
@@ -136,10 +139,13 @@ def collect(name,target=None,target_rules=None):
    if match:
     typ=re.sub(r'\s+',' ',match[1]).replace('< ','<').replace(' >','>')
     nested=re.sub(r'(?:java.util.)?List<([^>]+)>',r'\1',typ)
-    if name+'_'+nested in virtual:
-     typ=typ.replace(nested,name+'_'+nested);nested=name+'_'+nested
+    nested_name=next((candidate for candidate in (name+'_'+nested,p.stem+'_'+nested) if candidate in virtual), None)
+    if nested_name:
+     typ=typ.replace(nested,nested_name);nested=nested_name
     data[match[2]]=typ
     type_start=component.index(match[1])
+    if response and re.search(r'@JsonSerialize\s*\([^)]*\bCountSerializer\.class', mask(original[:type_start])):
+     response_field_types[name,match[2]]='number'
     if 'NON_NULL' in mask(original[:type_start]):response_field_non_null.setdefault(name,set()).add(match[2])
     rules[match[2]]=field_rule(original[:type_start],typ)
     if nested in files and any(seg in str(files[nested]) for seg in scope):collect(nested,target,target_rules)
@@ -321,12 +327,13 @@ def render_responses():
   omitted=response_non_null.get(name,False)
   per_field=response_field_non_null.get(name,set())
   for key,t in fields.items():
+   field_type=response_field_types.get((name,key),ts_type(t,known))
    if t in ('int','long','double','float','boolean'):
-    lines.append(f'  {key}: {ts_type(t,known)};')
+    lines.append(f'  {key}: {field_type};')
    elif omitted or key in per_field:
-    lines.append(f'  {key}?: {ts_type(t,known)};')
+    lines.append(f'  {key}?: {field_type};')
    else:
-    lines.append(f'  {key}: {ts_type(t,known)} | null;')
+    lines.append(f'  {key}: {field_type} | null;')
   lines.append('}\n')
  return '\n'.join(lines)
 

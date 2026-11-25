@@ -42,6 +42,8 @@
 
 ## 迁移、审查与历史方案
 
+- [2026-11-25 项目代码评审](reviews/2026-11-25-project-code-review/README.md)记录六个仓库的安全、架构、性能与接口发现，以及当日测试结果。
+
 - [待办总览](待办任务.md)、[Mobile 全功能迁移清单](Mobile全功能迁移任务清单.md)、[迁移与验收分类索引](mobile-migration/README.md)。
 - [2026-10-03 架构与安全审查](reviews/2026-10-03-architecture-security/README.md)：原始发现、任务、修复和各阶段验证分别保留。
 - [2026-11-06 数据库审查历史证据](reviews/2026-11-06-database-design/README.md)：保留原 MySQL 环境和证据边界，已清理重复整改分析；当前规则与待确认事项见上方字段治理入口。
