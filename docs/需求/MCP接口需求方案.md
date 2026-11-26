@@ -1,15 +1,16 @@
 # MCP 接口范围与需求
 
-2026-10-29 按当前工具契约核对。业务后端 `/api/mcp` 提供读写工具；独立查询服务的 `/mcp` 仅提供只读查询，两者工具、协议响应与权限链路分别维护。连接和调试步骤见[后端接入说明](../../aio-life-server/docs/mcp/streamable-http.md)。
+工具目录更新于 2026-11-26。业务后端 `/api/mcp` 提供读写工具；独立查询服务的 `/mcp` 仅提供只读查询，两者工具、协议响应与权限链路分别维护。连接和调试步骤见[后端接入说明](../../aio-life-server/docs/mcp/streamable-http.md)。
 
 ## 当前工具目录
 
-源码当前注册 16 个工具，分布于 `top.aiolife.record.mcp` 的 8 个 `@McpToolProvider`。部署后的目录及字段以实际 `tools/list` 为准；本文数量仅表示本次源码盘点，未调用运行环境。
+源码当前注册 17 个工具，分布于 `top.aiolife.record.mcp` 的 8 个 `@McpToolProvider`。部署后的目录及字段以实际 `tools/list` 为准；本文数量仅表示本次源码盘点，未调用运行环境。
 
 | 工具 | 能力 | 主要参数／限制 |
 | --- | --- | --- |
 | `time_record_queryByDateRange` | 读取日期范围时迹，含分类、描述（`description`）和精简运动明细 | `startDate`、`endDate`，日期字符串 |
 | `time_record_save` | 新增一段时迹 | 可选 `categoryId/date/title/description/startMinute/endMinute`；显式起止须成对提供 |
+| `time_record_update` | 修改当前用户已有时迹 | 必填字符串 `id`，另从 `categoryId/date/title/description/startMinute/endMinute` 中至少提供一个非 `null` 值 |
 | `thought_save` | 新增闪念及关联事件 | `content`、`events[].content` |
 | `time_tracker_category_list` | 当前用户可见时迹分类 | 无参数 |
 | `task_list` | 待办主任务及明细 | 可选 `page/pageSize`，返回 `items/total`，供逐页选择真实 ID |
@@ -30,6 +31,7 @@
 - 用户身份来自 Bearer 登录态／API Key，不接受工具参数指定所属用户。菜单二级锁仍适用；不能因 AI 发起调用而跳过业务权限。
 - 日期使用 `yyyy-MM-dd`。时迹分钟为闭区间，时长为 `endMinute - startMinute + 1`。
 - `time_record_save` 可显式指定闭区间分钟 `startMinute/endMinute`（0–1439，结束不早于开始）。省略两者时，只允许今天，从最后一条结束分钟加一追加到当前分钟；不存在可追加时段时拒绝，不裁剪成重复记录。非今天的记录必须提供起止时间。阅读／观影关联及运动明细使用现有 REST 接口。
+- `time_record_update` 从 `time_record_queryByDateRange` 获取记录 `id`，从 `time_tracker_category_list` 获取可用分类 `categoryId`。省略或传 `null` 保留原字段，标题和描述可传空字符串清空。起止分钟可单独修改，服务端在合并后校验范围并重算时长。已有阅读／观影关联和运动明细保留。日期变更会同步已有运动明细的日期，并检查运动菜单二级锁。成功结果为 `true`。
 - `task_detail_update` 只更新非 `null` 字段，数字 `0` 仍表示明确修改；须修改已有且属于当前用户的明细，不会隐式新增。
 - 阅读、观影、目标和视频查询的状态筛选使用 `not_started/in_progress/completed/on_hold`。响应展示中文业务标签，各模块文案可不同。
 - 目标类型为 `GoalTypeEnum` 的 1–10；目标进度更新的 `status` 使用 `in_progress/completed/on_hold`，与查询使用同一状态代码。
@@ -47,7 +49,7 @@
 ## 尚未注册的扩展需求
 
 - `time_record_recommend`：推荐时间段与分类。
-- `time_record_update`、`time_record_delete`：编辑或删除时迹。
+- `time_record_delete`：删除时迹。
 - `time_record_save` 的阅读／观影关联、运动明细增强（显式起止时间已经支持）。
 - 独立里程碑工具：不能把里程碑当作目标的子任务。
 
