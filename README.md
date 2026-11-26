@@ -62,7 +62,7 @@ cd aio-life
 
 ## AI Skill
 
-[AIO Life API Skill](skills/aio-life-api/SKILL.md) 在本仓库统一维护，通过在线契约渐进式发现并调用接口。只保存通用规则、公开接口信息和 UI 元数据；Token、私有服务地址、个人业务数据与本机配置均留在仓库外，通过运行环境提供。
+[AIO Life API Skill](skills/aio-life-api/SKILL.md) 在本仓库统一维护，通过在线契约渐进式发现并调用接口。Skill 只保存通用规则和公开接口信息。Token、私有服务地址、个人业务数据与本机配置均留在仓库外，通过运行环境提供。
 
 本地使用符号链接引用项目版本，无需复制或同步文件。在主仓库目录首次安装：
 
